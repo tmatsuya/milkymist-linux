@@ -1,0 +1,186 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+#
+
+mainmenu "uClinux/lattice mico32 Kernel Configuration"
+
+# this setting fixes all other settings we want to have fixed
+config LM32
+	bool
+	default y
+	select CPU_MICO32
+	select BOARD_ECP250
+
+config MMU
+	bool
+	default n
+
+config VGA_CONSOLE
+	bool
+	default n
+
+config ZONE_DMA_FLAG
+	int
+	default 0
+
+config GENERIC_IOMAP
+	bool
+	default y
+
+config RWSEM_GENERIC_SPINLOCK
+	bool
+	default y
+
+config GENERIC_FIND_NEXT_BIT
+	bool
+	default y
+
+config GENERIC_HWEIGHT
+	bool
+	default y
+
+config GENERIC_CALIBRATE_DELAY
+	bool
+	default y
+
+config GENERIC_ALLOCATOR
+	bool
+	default y
+
+config GENERIC_BUG
+	bool
+	default y
+
+config GENERIC_HARDIRQS
+	bool
+	default y
+
+config GENERIC_CLOCKEVENTS
+	bool
+	default n
+
+config SELECT_MEMORY_MODEL
+	bool
+	default y
+
+config FLATMEM_MANUAL
+	bool
+	default y
+
+config FLATMEM
+	bool
+	default y
+
+config FLAT_NODE_MEM_MAP
+	bool
+	default y
+
+config FLAT_NODE_MEM_MAP
+	bool
+	default y
+
+config NO_IOPORT
+	bool
+	default y
+
+config GENERIC_HARDIRQS_NO__DO_IRQ
+	bool
+	default y
+
+config APM_EMULATION
+	bool
+	default n
+
+config IPIPE_TRACE_MCOUNTS
+	bool
+	default n
+
+source "init/Kconfig"
+source "kernel/ipipe/Kconfig"
+
+menu "Processor, Board and Features"
+
+choice
+	prompt "CPU"
+	default CPU_MICO32
+
+config CPU_MICO32
+	bool "mico32"
+	help
+	  Lattice mico32 processor.
+
+endchoice
+
+choice
+	prompt "Board"
+	default BOARD_ECP250
+
+config BOARD_ECP250
+	bool "ecp250"
+	help
+	  ECP250 evaluation board.
+
+endchoice
+
+config TEXT_OFFSET
+	hex "Set the text offset in memory"
+	default "0x00000000"
+	help
+	  Define where the kernel will be loaded to and executed from.
+
+config HZ
+	int
+	default 100
+
+config EARLY_PRINTK
+	bool "Early printk"
+	default y
+	help
+	  This option enables special console drivers which allow the kernel
+	  to print messages very early in the bootup process.
+
+	  This is useful for kernel debugging when your machine crashes very
+	  early before the console code is initialized. You should normally
+		say N here, unless you want to debug.
+
+config LM32_HW_JTAG
+       bool "Disable kernel exception handling (enable JTAG debugging)"
+       default n
+       help
+         This option disables the exception handling within the kernel. It is
+         required to allow access with the JTAG debugger for kernel-level 
+         debug access.
+
+         Your should normally say N here, unless you want to debug.
+
+endmenu
+
+menu "Executable file formats"
+
+source "fs/Kconfig.binfmt"
+
+endmenu
+
+menu "Power management options"
+
+config PM
+	bool "Power Management support"
+	help
+	  Support processor power management modes
+
+endmenu
+
+source "net/Kconfig"
+
+source "drivers/Kconfig"
+
+source "fs/Kconfig"
+
+source "arch/lm32/Kconfig.debug"
+
+source "security/Kconfig"
+
+source "crypto/Kconfig"
+
+source "lib/Kconfig"
