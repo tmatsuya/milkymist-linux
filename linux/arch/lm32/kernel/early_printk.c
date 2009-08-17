@@ -44,9 +44,13 @@
 #define UART_ERR		(0x02)
 #define UART_BUSY		(0x04)
 
+#define UART_TXBUSY		(0x08)
+#define UART_TXDONE		(0x10)
+#define UART_TXACK		(0x20)
+
 static void early_console_putc (char c)
 {
-	while(CSR_UART_UCR & UART_BUSY);
+	while(CSR_UART_UCR & UART_TXBUSY);
 	CSR_UART_RXTX = c;
 }
 
