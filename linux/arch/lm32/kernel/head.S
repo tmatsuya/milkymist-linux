@@ -55,19 +55,16 @@ hang:
 
 save_args:
 	/* TODO: make this PIC */
-	mvhi	r23, hi(_kernel_arg_hwsetup)
-	ori	r23, r23, lo(_kernel_arg_hwsetup)
-	sw (r23+0), r1 /* store hwsetup parameter into _kernel_arg_hwsetup */
 	mvhi	r23, hi(_kernel_arg_cmdline)
 	ori	r23, r23, lo(_kernel_arg_cmdline)
-	sw (r23+0), r2 /* store commandline parameter into _kernel_arg_cmdline */
+	sw (r23+0), r1 /* store commandline parameter into _kernel_arg_cmdline */
 	/* store initrd parameters */
 	mvhi	r23, hi(_kernel_arg_initrd_start)
 	ori	r23, r23, lo(_kernel_arg_initrd_start)
-	sw (r23+0), r3
+	sw (r23+0), r2
 	mvhi	r23, hi(_kernel_arg_initrd_end)
 	ori	r23, r23, lo(_kernel_arg_initrd_end)
-	sw (r23+0), r4
+	sw (r23+0), r3
 	ret
 	
 setup_exception_vectors:

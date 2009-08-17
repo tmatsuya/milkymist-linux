@@ -1654,6 +1654,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
 	t->num_notes++;
 	sz += notesize(&t->notes[0]);
 
+#ifdef ELF_CORE_COPY_FPREGS
 	t->prstatus.pr_fpvalid = elf_core_copy_task_fpregs(p, NULL, &t->fpu);
 	if (t->prstatus.pr_fpvalid) {
 		fill_note(&t->notes[1], "CORE", NT_PRFPREG, sizeof(t->fpu),
@@ -1661,6 +1662,7 @@ static int elf_dump_thread_status(long signr, struct elf_thread_status *t)
 		t->num_notes++;
 		sz += notesize(&t->notes[1]);
 	}
+#endif
 
 #ifdef ELF_CORE_COPY_XFPREGS
 	if (elf_core_copy_task_xfpregs(p, &t->xfpu)) {
@@ -1782,7 +1784,9 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
  	struct task_struct *g, *p;
  	LIST_HEAD(thread_list);
  	struct list_head *t;
+#ifdef ELF_CORE_COPY_FPREGS
 	elf_fpregset_t *fpu = NULL;
+#endif
 #ifdef ELF_CORE_COPY_XFPREGS
 	elf_fpxregset_t *xfpu = NULL;
 #endif
@@ -1818,9 +1822,11 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
 	notes = kmalloc(NUM_NOTES * sizeof(struct memelfnote), GFP_KERNEL);
 	if (!notes)
 		goto cleanup;
+#ifdef ELF_CORE_COPY_FPREGS
 	fpu = kmalloc(sizeof(*fpu), GFP_KERNEL);
 	if (!fpu)
 		goto cleanup;
+#endif
 #ifdef ELF_CORE_COPY_XFPREGS
 	xfpu = kmalloc(sizeof(*xfpu), GFP_KERNEL);
 	if (!xfpu)
@@ -1893,11 +1899,13 @@ static int elf_fdpic_core_dump(long signr, struct pt_regs *regs,
 	fill_note(&notes[numnote++], "CORE", NT_AUXV,
 		  i * sizeof(elf_addr_t), auxv);
 
-  	/* Try to dump the FPU. */
+#ifdef ELF_CORE_COPY_FPREGS
+	/* Try to dump the FPU. */
 	if ((prstatus->pr_fpvalid =
 	     elf_core_copy_task_fpregs(current, regs, fpu)))
 		fill_note(notes + numnote++,
 			  "CORE", NT_PRFPREG, sizeof(*fpu), fpu);
+#endif
 #ifdef ELF_CORE_COPY_XFPREGS
 	if (elf_core_copy_task_xfpregs(current, xfpu))
 		fill_note(notes + numnote++,
@@ -2019,7 +2027,9 @@ cleanup:
 	kfree(prstatus);
 	kfree(psinfo);
 	kfree(notes);
+#ifdef ELF_CORE_COPY_FPREGS
 	kfree(fpu);
+#endif
 #ifdef ELF_CORE_COPY_XFPREGS
 	kfree(xfpu);
 #endif

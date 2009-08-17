@@ -36,6 +36,8 @@
 #define EF_LM32_PIC		0x00000001	/* TODO -fpic */
 #define EF_LM32_FDPIC		0x00000002	/* TODO -mfdpic or -G */
 
+#define ELF_FDPIC_CORE_EFLAGS EF_LM32_FDPIC
+
 /*
  * ELF relocation types
  */

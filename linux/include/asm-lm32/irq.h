@@ -30,11 +30,10 @@
 /* # of lm32 irq levels */
 #define NR_IRQLVL	1
 
-/* LM32: we always use timer with irq 1 for linux */
-/* this can be changed at this position */
-/* the timer init will search for the timer with this irq in all timers */
-/* LM32: TODO: change timer setup such that timer is searched according to IRQ_LINUX_TIMER */
-#define IRQ_LINUX_TIMER 1
+/* LM32: we always use the first timer in the hardware-description as the system timer */
+extern unsigned int  lm32_core_timer_irq;
+
+#define IRQ_LINUX_TIMER  (lm32_core_timer_irq)
 
 #include <linux/irq.h>
 

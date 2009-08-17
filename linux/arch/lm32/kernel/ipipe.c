@@ -88,7 +88,7 @@ void __ipipe_enable_pipeline(void)
 {
 	unsigned irq;
 
-	__ipipe_core_clock = lm32tag_cpu[0]->frequency;
+	__ipipe_core_clock = cpu_frequency;
 	__ipipe_freq_scale = 1000000000UL / __ipipe_core_clock;
 
 	for (irq = 0; irq < NR_IRQS; irq++) {

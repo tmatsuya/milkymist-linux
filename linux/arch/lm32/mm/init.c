@@ -43,10 +43,10 @@
 #include <asm-generic/sections.h>
 #include <asm-lm32/setup.h>
 
-#undef DEBUG
+//#undef DEBUG
+#define DEBUG
 
 /* in arch/lm32/kernel/setup.c */
-extern unsigned long asmlinkage _kernel_arg_hwsetup;
 extern unsigned long asmlinkage _kernel_arg_initrd_start;
 extern unsigned long asmlinkage _kernel_arg_initrd_end;
 
@@ -62,15 +62,13 @@ void __init bootmem_init(void)
 	/*
 	 * Init memory
 	 */
-	physical_memory_start = lm32tag_ddr_sdram[0]->addr;
-	physical_memory_end = lm32tag_ddr_sdram[0]->addr + lm32tag_ddr_sdram[0]->size;
+	physical_memory_start = sdram_start;
+	physical_memory_end = sdram_start+sdram_size;
 	if( ((unsigned long)_end < physical_memory_start) || ((unsigned long)_end > physical_memory_end) )
 		printk("BUG: your kernel is not located in the ddr sdram");
 	/* start after kernel code */
 	memory_start = PAGE_ALIGN((unsigned long)_end);
-	/* The hwsetup is defined to be at the end of the RAM where U-Boot was, we can
-	 * use all memory until we reach the hwsetup data */
-	memory_end = _kernel_arg_hwsetup & PAGE_MASK;
+	memory_end = physical_memory_end;
 #ifdef DEBUG
 	printk("memory from %lx - %lx\n", memory_start, memory_end);
 #endif
@@ -162,7 +160,7 @@ void __init mem_init(void)
 	unsigned long start_mem = memory_start;
 	unsigned long end_mem   = memory_end;
 	/* TODO: use more of hardware setup to initialize memory */
-	unsigned long ramlen = lm32tag_ddr_sdram[0]->size;
+	unsigned long ramlen = sdram_size;
 
 #ifdef DEBUG
 	printk(KERN_DEBUG "Mem_init: start=%lx, end=%lx\n", start_mem, end_mem);

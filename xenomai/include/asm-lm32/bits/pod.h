@@ -65,14 +65,6 @@ static inline void xnarch_switch_to(xnarchtcb_t * out_tcb, xnarchtcb_t * in_tcb)
 	struct task_struct* prevtask;
 	struct task_struct* nexttask;
 
-#if 0
-	volatile unsigned long* ledbase = (volatile unsigned long*)lm32tag_leds[0]->addr; 
-	*ledbase = ~0;
-		*ledbase &= ~1;
-		*ledbase &= ~2;
-		*ledbase &= ~4;
-#endif
-
 	if (likely(next != NULL)) {
 		in_tcb->active_task = next;
 		rthal_clear_foreign_stack(&rthal_domain);
@@ -123,8 +115,6 @@ asmlinkage static void xnarch_thread_trampoline(unsigned long __unused,
     void *cookie,
     void (*entry)(void *cookie))
 {
-	volatile unsigned long* ledbase = (volatile unsigned long*)lm32tag_leds[0]->addr; 
-
 	xnpod_welcome_thread(self, imask);
 	entry(cookie);
 	xnpod_delete_thread(self);

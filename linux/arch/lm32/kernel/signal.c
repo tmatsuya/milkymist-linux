@@ -172,6 +172,10 @@ asmlinkage int sys_sigreturn(struct pt_regs *regs)
 	sigset_t set;
 	int rval = 0;
 
+#if DEBUG_SIG
+	printk("SIGRETURN\n");
+#endif
+
 	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
 		goto badframe;
 
@@ -302,8 +306,8 @@ static int setup_frame(int sig, struct k_sigaction *ka,
 	set_fs(USER_DS);
 
 #if DEBUG_SIG
-	printk("SIG deliver (%s:%d): sp=%p pc=%08lx ra=%08lx\n",
-		current->comm, current->pid, frame, regs->ra);
+	printk("SIG deliver (%s:%d): frame=%p, sp=%p ra=%08lx ea=%08lx, signal(r1)=%d\n",
+	       current->comm, current->pid, frame, regs->sp, regs->ra, regs->ea, signal);
 #endif
 
 	return regs->r1;
@@ -439,13 +443,21 @@ asmlinkage int manage_signals(int retval, struct pt_regs* regs) {
 		}
 
 		if( current_thread_info()->flags & _TIF_SIGPENDING ) {
+#if DEBUG_SIG
+			/* debugging code */
+			{
+				register unsigned long sp asm("sp");
+				printk("WILL process signal for %s with regs=%lx, ea=%lx, ba=%lx ra=%lx\n",
+						current->comm, regs, regs->ea, regs->ba, *((unsigned long*)(sp+4)));
+			}
+#endif
 			retval = do_signal(retval, regs, NULL);
 
 			/* signal handling enables interrupts */
 
 			/* disable irqs for sampling current_thread_info()->flags */
 			local_irq_disable();
-#if 0
+#if DEBUG_SIG
 			/* debugging code */
 			{
 				register unsigned long sp asm("sp");
@@ -468,28 +480,14 @@ asmlinkage void manage_signals_irq(struct pt_regs* regs) {
 
 	/* disable interrupts for sampling current_thread_info()->flags */
 	local_irq_save(flags);
-	while( current_thread_info()->flags & (_TIF_NEED_RESCHED | _TIF_SIGPENDING) ) {
-		if( current_thread_info()->flags & _TIF_NEED_RESCHED ) {
-			/* schedule -> enables interrupts */
-			schedule();
 
-			/* disable interrupts for sampling current_thread_info()->flags */
-			local_irq_disable();
-		}
-
-		if( current_thread_info()->flags & _TIF_SIGPENDING ) {
-			unsigned long backup_r8 = regs->r8;
-			/* we are not coming from a syscall */
-			regs->r8 = 0;
-			do_signal(0, regs, NULL);
-			/* restore r8, we must not change the interrupt frame! */
-			regs->r8 = backup_r8;
-
-			/* signal handling enables interrupts */
-
-			/* disable irqs for sampling current_thread_info()->flags */
-			local_irq_disable();
-		}
+	if( current_thread_info()->flags & _TIF_NEED_RESCHED ) {
+		/* schedule -> enables interrupts */
+		schedule();
+		
+		/* disable interrupts for sampling current_thread_info()->flags */
+		local_irq_disable();
 	}
+
 	local_irq_restore(flags);
 }

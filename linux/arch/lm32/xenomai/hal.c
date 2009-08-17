@@ -138,7 +138,7 @@ void rthal_timer_program(int periodic, cycles_t cyc)
 
 unsigned long rthal_timer_calibrate(void)
 {
-	return 1000000000 / lm32tag_cpu[0]->frequency;
+	return 1000000000 / cpu_frequency;
 }
 
 int rthal_timer_request(void (*handler)(void), int cpu)
@@ -150,7 +150,7 @@ int rthal_timer_request(void (*handler)(void), int cpu)
 
 		__ipipe_mach_timerstolen = 1;
 
-    rthal_timer_program_shot(lm32tag_cpu[0]->frequency/HZ);
+    rthal_timer_program_shot(cpu_frequency/HZ);
 
     err = rthal_irq_request(RTHAL_TIMER_IRQ,
                             (rthal_irq_handler_t) handler, NULL, NULL);
@@ -204,10 +204,10 @@ RTHAL_DECLARE_DOMAIN(rthal_domain_entry);
 int rthal_arch_init(void)
 {
 	if (rthal_cpufreq_arg == 0)
-		rthal_cpufreq_arg = lm32tag_cpu[0]->frequency;
+		rthal_cpufreq_arg = cpu_frequency;
 
 	if (rthal_timerfreq_arg == 0)
-		rthal_timerfreq_arg = lm32tag_cpu[0]->frequency;
+		rthal_timerfreq_arg = cpu_frequency;
 
 	return 0;
 }

@@ -1,10 +1,8 @@
 /*
+ * (C) Copyright 2009
+ *     Sebastien Bourdeauducq
  * (C) Copyright 2007
  *     Theobroma Systems <www.theobroma-systems.com>
- *
- * See file CREDITS for list of people who contributed to this
- * project.
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
@@ -38,58 +36,18 @@
 #include <linux/string.h>
 #include <asm-lm32/setup.h>
 
-typedef struct LM32_uart {
-  volatile unsigned int  rxtx;
-  volatile unsigned int  ier;
-  volatile unsigned int  iir;
-  volatile unsigned int  lcr;
-  volatile unsigned int  mcr;
-  volatile unsigned int  lsr;
-  volatile unsigned int  msr;
-  volatile unsigned int  div;
-} LM32_uart_t;
+#define MMPTR(x) (*((volatile unsigned int *)(x)))
+#define CSR_UART_UCR 		MMPTR(0x80000000)
+#define CSR_UART_RXTX 		MMPTR(0x80000004)
 
-/* activate this to set the early console baudrate,
- * otherwise the old baudrate (from the bootloader) is used */
-#undef LM32_EARLY_CONSOLE_SET_BAUDRATE
-
-#define LM32_CONSOLE_BAUDRATE   9600
-#define LM32_UART_LSR_THRE      (1 << 5)
-#define LM32_UART_LSR_DR        (1 << 0)
-
-static LM32_uart_t  *uart = 0;
-
-#ifdef LM32_EARLY_CONSOLE_SET_BAUDRATE
-static void early_console_setbrg( void )
-{ 
-  if (uart) {
-    unsigned int  baud_by_100   = LM32_CONSOLE_BAUDRATE / 100;
-    unsigned int  baud_multiple = 1024 * 1024 * baud_by_100;
-    unsigned int  sysclk_by_100 = lm32tag_cpu[0]->frequency / 100;
-
-    uart->div = (baud_multiple + (sysclk_by_100 / 2)) / sysclk_by_100;
-  }
-
-  return; 
-}
-#endif
+#define UART_DR			(0x01)
+#define UART_ERR		(0x02)
+#define UART_BUSY		(0x04)
 
 static void early_console_putc (char c)
 {
-  if (uart) {
-    if (c == '\n')
-      early_console_putc('\r');
-
-    /* wait for the transmit holding register empty (THRE) signal */
-    while ((uart->lsr & LM32_UART_LSR_THRE) == 0) 
-      /* spin */ ;
-
-    uart->rxtx = c;
-		/* uncomment this if you want to expose the uart -> address 0 bug
-		if( *((volatile unsigned long*)(0x0)) != 0x98000000 )
-					 asm volatile("break");
-		*/
-  }
+	while(CSR_UART_UCR & UART_BUSY);
+	CSR_UART_RXTX = c;
 }
 
 // write string to console
@@ -97,8 +55,6 @@ static void
 early_console_write(struct console *con, const char *s, unsigned n)
 {
 	while (n-- && *s) {
-		if (*s == '\n')
-			early_console_putc('\r');
 		early_console_putc(*s);
 		s++;
 	}
@@ -108,24 +64,10 @@ early_console_write(struct console *con, const char *s, unsigned n)
 static int
 early_console_setup(struct console *con, char *s)
 {
-  if (uart) {
-    /* disable UART interrupts */
-    uart->ier = 0;
-    /* set to 8bit, 1 stop character */
-    uart->lcr = ( 0x3 | 0x4 );
+	if( s )
+		early_console_write(con, s, strlen(s));
 
-    /* set up baud rate */
-#ifdef LM32_EARLY_CONSOLE_SET_BAUDRATE
-    early_console_setbrg();
-#endif
-
-		if( s )
-			early_console_write(con, s, strlen(s));
-
-		return 0;
-  } else {
-		return -1;
-	}
+	return 0;
 }
 
 static struct console early_console = {
@@ -143,9 +85,6 @@ void setup_early_printk(void)
 	if (early_console_initialized)
 		return;
 	early_console_initialized = 1;
-
-	if( lm32tag_num_uart > 0 )
-		uart = (LM32_uart_t*)lm32tag_uart[0]->addr;
 
 	register_console(&early_console);
 }

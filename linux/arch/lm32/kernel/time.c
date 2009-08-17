@@ -47,19 +47,17 @@
 #include <asm/setup.h>
 #include <asm/uaccess.h>
 
-typedef struct LM32_timer {
-  volatile unsigned int  Status;
-  volatile unsigned int  Control;
-  volatile unsigned int  Period;
-  volatile unsigned int  Snapshot;
-} LM32_timer_t;
+#define MMPTR(x) (*((volatile unsigned int *)(x)))
 
-/* index of core timer in lm32tag_timer */
-/* (always use first timer for kernel timing) */
-static int lm32_core_timer_idx = 0;
-/* timer registers */
-/* (has to be set by time_init) */
-static LM32_timer_t* lm32_core_timer_reg = NULL;
+#define CSR_TIMER0_CONTROL	MMPTR(0x80001010)
+#define CSR_TIMER0_COMPARE	MMPTR(0x80001014)
+#define CSR_TIMER0_COUNTER	MMPTR(0x80001018)
+
+#define TIMER_MATCH		(0x01)
+#define TIMER_AUTORESTART	(0x02)
+#define TIMER_ENABLE		(0x04)
+
+unsigned int lm32_core_timer_irq = 1;
 
 cycles_t lm32_cycles = 0;
 
@@ -74,15 +72,11 @@ static struct irqaction lm32_core_timer_irqaction = {
 
 void lm32_systimer_ack(void)
 {
-	if(likely(lm32_core_timer_reg)) {
-		/* update virtual cycle counter */
-		lm32_cycles += lm32_core_timer_reg->Period;
-
-		/* ack interrupt in timer control */
-		lm32_core_timer_reg->Status = 0;
-		/* ack interrupt */
-		lm32_irq_ack(IRQ_SYSTMR);
-	}
+	//printk("i%d\n", CSR_TIMER0_COUNTER);
+	lm32_cycles += CSR_TIMER0_COMPARE;
+	/* ack interrupt */
+	CSR_TIMER0_CONTROL = CSR_TIMER0_CONTROL;
+	lm32_irq_ack(IRQ_SYSTMR);
 }
 
 /*
@@ -95,49 +89,6 @@ static irqreturn_t timer_interrupt(int irq, void *arg)
 	if( !__ipipe_mach_timerstolen )
 #endif
 		lm32_systimer_ack();
-
-#if 0
-	{ extern int was_in_xeno_clock;
-	if( was_in_xeno_clock ) {
-		static int i = 0x50;
-		volatile unsigned long* ledbase = (volatile unsigned long*)0x80004000;
-		i++;
-		*ledbase = ~i;
-	}}
-#endif
-
-#if 0
-	// count up to show interrupt activity
-	{
-		volatile unsigned long* segbase = (volatile unsigned long*)lm32tag_7seg[0]->addr; 
-		*segbase = 0x100 | ((*segbase + 1) & 0xFF);
-	}
-#endif
-
-#if 0
-	{
-		static unsigned loop = 0;
-		loop++;
-		if( loop == 25 ) {
-			loop = 0;
-			printk("\n");
-		}
-		if( user_mode(0) ) {
-			printk("t");
-		} else {
-			printk("T");
-		}
-	}
-#endif
-
-#if 0
-	// count up to show interrupt activity
-	volatile unsigned long* ledbase = (volatile unsigned long*)lm32tag_leds[0]->addr; 
-	static char leds = 0;
-	leds++;
-	*ledbase = ~leds;
-#endif
-
 	write_seqlock(&xtime_lock);
 
 	do_timer(1);
@@ -159,45 +110,36 @@ void time_init(void)
 
 	wall_to_monotonic.tv_sec = -xtime.tv_sec;
 
-	/* timer registers */
-	lm32_core_timer_reg = (LM32_timer_t*)lm32tag_timer[lm32_core_timer_idx]->addr;
+	lm32_core_timer_irq = 1;
 
-	lm32_systimer_program(1, lm32tag_cpu[0]->frequency / HZ);
+	lm32_systimer_program(1, cpu_frequency / HZ);
 
-	if( setup_irq(lm32tag_timer[lm32_core_timer_idx]->irq, &lm32_core_timer_irqaction) )
+	if( setup_irq(IRQ_SYSTMR, &lm32_core_timer_irqaction) )
 		panic("could not attach timer interrupt!");
 
-	lm32_irq_unmask(lm32tag_timer[lm32_core_timer_idx]->irq);
+	lm32_irq_unmask(IRQ_SYSTMR);
 }
 
 static unsigned long get_time_offset(void)
 {
-	return (lm32_core_timer_reg->Period - lm32_core_timer_reg->Snapshot) / (lm32tag_cpu[0]->frequency / HZ);
+	return CSR_TIMER0_COUNTER/(cpu_frequency / HZ);
 }
 
 cycles_t get_cycles(void)
 {
-	if( likely(lm32_core_timer_reg) )
-		return lm32_cycles +
-			lm32_core_timer_reg->Period - lm32_core_timer_reg->Snapshot;
-	return 0;
+	return lm32_cycles +
+		CSR_TIMER0_COUNTER;
 }
 
 void lm32_systimer_program(int periodic, cycles_t cyc)
 {
-	if( likely(lm32_core_timer_reg) )
-	{
-		/* stop timer */
-		lm32_core_timer_reg->Control = (1 << 3);  /* STOP */
-		/* reset/configure timer */
-		lm32_core_timer_reg->Status = 0;
-		lm32_core_timer_reg->Period = cyc;
-		/* start timer */
-		lm32_core_timer_reg->Control = (
-				(1 << 0) |  /* enable interrupts */ 
-				(periodic << 1) |  /* single or periodic (CONT) */ 
-				(1 << 2));  /* START */
-	}
+	/* stop timer */
+	CSR_TIMER0_CONTROL = 0;
+	/* reset/configure timer */
+	CSR_TIMER0_COUNTER = 0;
+	CSR_TIMER0_COMPARE = cyc;
+	/* start timer */
+	CSR_TIMER0_CONTROL = periodic ? TIMER_ENABLE|TIMER_AUTORESTART : TIMER_ENABLE;
 }
 
 /*

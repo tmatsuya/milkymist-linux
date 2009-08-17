@@ -32,6 +32,7 @@
 #include <linux/mm.h>
 #include <linux/hardirq.h>
 #include <linux/ptrace.h>
+#include <linux/module.h>
 
 #include <asm/system.h>
 #include <asm/registers.h>
@@ -81,6 +82,13 @@ static void show_trace(struct task_struct *tsk, unsigned long *sp)
 
 	printk("\n");
 }
+
+void dump_stack(void)
+{
+	unsigned long dummy;
+	show_trace(NULL, &dummy);
+}
+EXPORT_SYMBOL(dump_stack);
 
 void show_stack(struct task_struct *task, unsigned long *stack)
 {
