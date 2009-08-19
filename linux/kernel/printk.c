@@ -1172,7 +1172,9 @@ static int __init disable_boot_consoles(void)
 	}
 	return 0;
 }
+#if 0
 late_initcall(disable_boot_consoles);
+#endif
 
 /**
  * tty_write_message - write a message to a certain tty, not just the console.
