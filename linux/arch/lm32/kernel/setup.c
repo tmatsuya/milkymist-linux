@@ -76,10 +76,6 @@ unsigned int sdram_size;
 
 void __init setup_arch(char **cmdline_p)
 {
-	_kernel_arg_cmdline = (unsigned long)"console=early";
-	_kernel_arg_initrd_start = 0x40000000+4*1024*1024;
-	_kernel_arg_initrd_end = 0x40000000+6*1024*1024;
-
 	/*
 	 * init "current thread structure" pointer
 	 */
