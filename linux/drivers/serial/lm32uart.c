@@ -465,10 +465,8 @@ static int __init lm32_console_setup(struct console *co, char *options)
 	int parity = 'n';
 	int flow = 'n';
 
-#if 0
 	if (port->membase == 0)		/* Port not initialized yet - delay setup */
 		return -ENODEV;
-#endif
 
 	/* disable interrupts */
 	priv->ier = 0; /* TODO: only disable temporarily? */
