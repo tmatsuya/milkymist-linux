@@ -161,3 +161,45 @@ struct seq_operations cpuinfo_op = {
 	.stop	= c_stop,
 	.show	= show_cpuinfo,
 };
+
+static struct resource lm32uart_resources[] = {
+	[0] = {
+		.start = 0x80000000,
+		.end = 0x8000000f,
+		.flags = IORESOURCE_MEM,
+	},
+#if 0
+	[1] = {
+		.start = 3,
+		.end = 3,
+		.flags = IORESOURCE_IRQ,
+	},
+#endif
+};
+
+static struct platform_device lm32uart_device = {
+	.name = "lm32uart",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(lm32uart_resources),
+	.resource = lm32uart_resources,
+};
+
+
+/* setup all devices we find in the hardware setup information */
+static int __init setup_devices(void) {
+	int ret = 0;
+	int i, err;
+
+	err = platform_device_register(&lm32uart_device);
+	if( err ) {
+		printk(KERN_ERR "could not register 'lm32uart'error:%d\n", err);
+		ret = err;
+	}
+
+	return ret;
+}
+/* default console - interface to lm32uart.c serial + console driver */
+struct platform_device* lm32uart_default_console_device = &lm32uart_device;
+
+arch_initcall(setup_devices);
+
