@@ -552,7 +552,7 @@ static struct uart_port* __devinit lm32uart_init_port(struct platform_device *pd
 	port = &lm32uart_ports[0];
 	port->type = PORT_LM32UART;
 	port->iobase = (void __iomem*)0;;
-	port->membase = (void __iomem*)0x80000004;
+	port->membase = (void __iomem*)0x80000000;
 	port->irq = 3;
 	port->uartclk = cpu_frequency * 16;
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
