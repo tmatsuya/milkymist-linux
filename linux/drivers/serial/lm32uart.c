@@ -51,7 +51,6 @@
 #define UART_TXDONE		(0x10)
 #define UART_TXACK		(0x20)
 
-
 /* these two will be initialized by lm32uart_init */
 static struct uart_port lm32uart_ports[1];
 static struct LM32_uart_priv lm32uart_privs[1];
@@ -103,12 +102,7 @@ static inline void lm32uart_set_baud_rate(struct uart_port *port, unsigned long 
 {
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 
-	/* configure the uart for the correct baud rate */
-	unsigned int  baud_by_100   = baud / 100;
-	unsigned int  baud_multiple = 1024 * 1024 * baud_by_100;
-	unsigned int  sysclk_by_100 = cpu_frequency / 100;
-
-	uart->div = (baud_multiple + (sysclk_by_100 / 2)) / sysclk_by_100;
+	uart->div = 100000000 / baud / 16;
 }
 
 static void lm32uart_tx_next_char(struct uart_port* port, LM32_uart_t* uart)
@@ -146,48 +140,48 @@ static void lm32uart_rx_next_char(struct uart_port* port, LM32_uart_t* uart)
 {
 	struct tty_struct *tty = port->info->tty;
 	unsigned long ch;
-	unsigned long lsr;
+	unsigned long ucr;
 	unsigned int flg;
 
-	lsr = uart->lsr;
-	while( lsr & LM32_UART_LSR_DR ) {
+	ucr = uart->ucr;
+	while( ucr & LM32_UART_RX_AVAILABLE ) {
 		ch = uart->rxtx & 0xFF;
 		port->icount.rx++;
 
 		flg = TTY_NORMAL;
 
-		if( lsr & (LM32_UART_LSR_BI | LM32_UART_LSR_PE | LM32_UART_LSR_OE | LM32_UART_LSR_FE) ) {
+		if( ucr & (LM32_UART_LSR_BI | LM32_UART_LSR_PE | LM32_UART_LSR_OE | LM32_UART_LSR_FE) ) {
 			/* handle errors here, but don't let them delay us in normal processing */
-			if( lsr & LM32_UART_LSR_BI ) {
+			if( ucr & LM32_UART_LSR_BI ) {
 				port->icount.brk++;
 				if (uart_handle_break(port))
 					goto ignore_char;
-				lsr &= ~(LM32_UART_LSR_PE | LM32_UART_LSR_FE);
+				ucr &= ~(LM32_UART_LSR_PE | LM32_UART_LSR_FE);
 			}
-			if( lsr & LM32_UART_LSR_PE )
+			if( ucr & LM32_UART_LSR_PE )
 				port->icount.parity++;
-			if( lsr & LM32_UART_LSR_OE )
+			if( ucr & LM32_UART_LSR_OE )
 				port->icount.overrun++;
-			if( lsr & LM32_UART_LSR_FE )
+			if( ucr & LM32_UART_LSR_FE )
 				port->icount.frame++;
 
-			lsr &= port->read_status_mask;
+			ucr &= port->read_status_mask;
 
-			if( lsr & LM32_UART_LSR_BI )
+			if( ucr & LM32_UART_LSR_BI )
 				flg = TTY_BREAK;
-			else if (lsr & LM32_UART_LSR_PE)
+			else if (ucr & LM32_UART_LSR_PE)
 				flg = TTY_PARITY;
-			else if (lsr & LM32_UART_LSR_FE)
+			else if (ucr & LM32_UART_LSR_FE)
 				flg = TTY_FRAME;
 		}
 
 		if (uart_handle_sysrq_char(port, ch))
 			goto ignore_char;
 
-		uart_insert_char(port, lsr, LM32_UART_LSR_OE, ch, flg);
+		uart_insert_char(port, ucr, LM32_UART_LSR_OE, ch, flg);
 
 	ignore_char:
-		lsr = uart->lsr;
+		ucr = uart->ucr;
 	}
 
 	tty_flip_buffer_push(tty);
@@ -200,45 +194,21 @@ static irqreturn_t lm32uart_interrupt(int irq, void* portarg)
 	irqreturn_t ret = IRQ_NONE;
 
 	/* get interrupt source */
-	unsigned long intr_src = uart->iir;
-	do {
-		unsigned long lsr;
-		unsigned long msr;
+	unsigned long intr_src;
 
-		switch(intr_src)
-		{
-			case LM32_UART_IIR_LSR_DR:
-				/* data ready in buffer -> receive character */
-				lm32uart_rx_next_char(port, uart);
-				ret = IRQ_HANDLED;
-				break;
+	if (uart->ucr & LM32_UART_RX_AVAILABLE)
+	{
+		/* data ready in buffer -> receive character */
+		lm32uart_rx_next_char(port, uart);
+		return IRQ_HANDLED;
+	}
 
-			case LM32_UART_IIR_LSR_THRE:
-				/* transmit register empty -> can send next byte */
-				lm32uart_tx_next_char(port, uart);
-				ret = IRQ_HANDLED;
-				break;
-
-			case LM32_UART_IIR_LSR_ERROR:
-				/* clear interrupt by reading lsr */
-				lsr = uart->lsr;
-				/* we effectively ignore this interrupt */
-				ret = IRQ_HANDLED;
-				break;
-
-			case LM32_UART_IIR_MSR:
-				/* clear interrupt by reading msr */
-				msr = uart->msr;
-				/* we effectively ignore this interrupt */
-				ret = IRQ_HANDLED;
-				break;
-
-			default:
-				/* unknown irq cause, we cannot do anything here except leave unhandled */
-				return ret;
-		}
-		intr_src = uart->iir;
-	} while( intr_src != LM32_UART_IIR_NONE );
+	if (uart->ucr & LM32_UART_TX_DONE)
+	{
+		/* transmit register empty -> can send next byte */
+		lm32uart_tx_next_char(port, uart);
+		return IRQ_HANDLED;
+	}
 
 	return ret;
 }
@@ -247,10 +217,10 @@ static unsigned int lm32uart_tx_empty(struct uart_port *port)
 {
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 
-	if( uart->lsr & LM32_UART_LSR_TEMT )
-		return TIOCSER_TEMT;
-	else
+	if( uart->ucr & LM32_UART_TX_BUSY )
 		return 0;
+	else
+		return TIOCSER_TEMT;
 }
 
 static void lm32uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
@@ -316,15 +286,6 @@ static void lm32uart_enable_ms(struct uart_port *port)
 
 static void lm32uart_break_ctl(struct uart_port *port, int break_state)
 {
-	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
-	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
-
-	/* set transmit break bit */
-	if( break_state )
-		priv->lcr |= LM32_UART_LCR_SB;
-	else
-		priv->lcr &= ~LM32_UART_LCR_SB;
-	uart->lcr = priv->lcr;
 }
 
 static int lm32uart_startup(struct uart_port *port)
@@ -366,35 +327,6 @@ static void lm32uart_set_termios(
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
-	/* reset lcr and then set it new */
-	priv->lcr &= ~LM32_UART_LCR_WSL;
-	switch (termios->c_cflag & CSIZE) {
-	case CS8:
-		priv->lcr |= LM32_UART_LCR_WSL8;
-		break;
-	case CS7:
-		priv->lcr |= LM32_UART_LCR_WSL7;
-		break;
-	case CS6:
-		priv->lcr |= LM32_UART_LCR_WSL6;
-		break;
-	case CS5:
-		priv->lcr |= LM32_UART_LCR_WSL5;
-		break;
-	default:
-		printk(KERN_ERR "%s: word lengh not supported\n",
-			__FUNCTION__);
-	}
-
-	if (termios->c_cflag & CSTOPB)
-		priv->lcr |= LM32_UART_LCR_STB;
-	if (termios->c_cflag & PARENB)
-		priv->lcr |= LM32_UART_LCR_PEN;
-	if (termios->c_cflag & PARODD)
-		priv->lcr |= LM32_UART_LCR_EPS;
-	if (termios->c_cflag & CMSPAR)
-		priv->lcr |= LM32_UART_LCR_SP;
-
 	/* >> 4 means / 16 */
 	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk >> 4);
 
@@ -429,11 +361,10 @@ static void lm32uart_set_termios(
 			port->ignore_status_mask |= LM32_UART_LSR_OE;
 	}
 	if ((termios->c_cflag & CREAD) == 0)
-		port->ignore_status_mask |= LM32_UART_LSR_DR;
+		port->ignore_status_mask |= LM32_UART_RX_AVAILABLE;
 
 	// TODO MSI configuration?
 
-	uart->lcr = priv->lcr;
 	/* reactivate uart */
 	uart->ier = priv->ier;
 
@@ -497,7 +428,7 @@ static void lm32_console_write(struct console *co, const char *s, u_int count)
 
 	/* Wait for transmitter to become empty and restore interrupts */
 #if 0
-	while((uart->lsr & LM32_UART_LSR_THRE) == 0)
+	while((uart->ucr & LM32_UART_LSR_THRE) == 0)
 		barrier();
 #endif
 	uart->ier = priv->ier;
@@ -574,13 +505,8 @@ static int __init lm32_early_console_init(void)
 {
 	if( lm32tag_num_uart > 0 ) {
 		/* first uart device = default console */
-#if 0
 		add_preferred_console(LM32UART_DEVICENAME, lm32uart_default_console_device->id, NULL);
-#endif
-		add_preferred_console(LM32UART_DEVICENAME, 0, NULL);
-#if 0
-		lm32uart_init_port(lm32uart_default_console_device);
-#endif
+		lm32uart_init_port(&lm32uart_default_console_device);
 		register_console(&lm32_console);
 		pr_info("lm32uart: registered real console\n");
 		return 0;
@@ -596,9 +522,6 @@ console_initcall(lm32_early_console_init);
 static int __init lm32_late_console_init(void)
 {
 	if( lm32tag_num_uart > 0 &&
-#if 0
-			lm32uart_default_console_device &&
-#endif
 			!(lm32_console.flags & CON_ENABLED) ) {
 		register_console(&lm32_console);
 		pr_info("lm32uart: registered real console\n");
@@ -626,11 +549,11 @@ static struct uart_port* __devinit lm32uart_init_port(struct platform_device *pd
 {
 	struct uart_port* port;
 	
-	port = &lm32uart_ports[pdev->id];
+	port = &lm32uart_ports[0];
 	port->type = PORT_LM32UART;
-	port->iobase = 0;
-	port->membase = (void __iomem*)CSR_UART_RXTX;
-	port->irq = 4;
+	port->iobase = (void __iomem*)0;;
+	port->membase = (void __iomem*)0x80000004;
+	port->irq = 3;
 	port->uartclk = cpu_frequency * 16;
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
 	port->iotype = UPIO_PORT; // TODO perhaps this is not completely correct
@@ -656,7 +579,7 @@ static int __devinit lm32uart_serial_probe(struct platform_device *pdev)
 	ret = uart_add_one_port(&lm32uart_driver, port);
 	if (!ret) {
 		pr_info("lm32uart: added port %d with irq %d at 0x%lx\n",
-				port->line, port->irq, (unsigned long)port->iobase);
+				port->line, port->irq, (unsigned long)port->membase);
 		device_init_wakeup(&pdev->dev, 1);
 		platform_set_drvdata(pdev, port);
 	} else
