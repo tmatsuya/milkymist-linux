@@ -35,13 +35,26 @@
 #include <linux/platform_device.h>
 #include <asm/io.h>
 #include <asm/irq.h>
+#include <asm/setup.h>
 
 #include "lm32uart.h"
 
+#define MMPTR(x) (*((volatile unsigned int *)(x)))
+#define CSR_UART_UCR		MMPTR(0x80000000)
+#define CSR_UART_RXTX		MMPTR(0x80000004)
+
+#define UART_DR			(0x01)
+#define UART_ERR		(0x02)
+#define UART_BUSY		(0x04)
+
+#define UART_TXBUSY		(0x08)
+#define UART_TXDONE		(0x10)
+#define UART_TXACK		(0x20)
+
 
 /* these two will be initialized by lm32uart_init */
-static struct uart_port lm32uart_ports[LM32MAX_HWSETUP_ITEMS];
-static struct LM32_uart_priv lm32uart_privs[LM32MAX_HWSETUP_ITEMS];
+static struct uart_port lm32uart_ports[1];
+static struct LM32_uart_priv lm32uart_privs[1];
 
 static struct uart_port* __devinit lm32uart_init_port(struct platform_device *pdev);
 
@@ -84,6 +97,8 @@ static struct uart_ops lm32uart_pops = {
 	.verify_port	= lm32uart_verify_port
 };
 
+extern unsigned lm32tag_num_uart;
+
 static inline void lm32uart_set_baud_rate(struct uart_port *port, unsigned long baud)
 {
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
@@ -91,7 +106,7 @@ static inline void lm32uart_set_baud_rate(struct uart_port *port, unsigned long 
 	/* configure the uart for the correct baud rate */
 	unsigned int  baud_by_100   = baud / 100;
 	unsigned int  baud_multiple = 1024 * 1024 * baud_by_100;
-	unsigned int  sysclk_by_100 = lm32tag_cpu[0]->frequency / 100;
+	unsigned int  sysclk_by_100 = cpu_frequency / 100;
 
 	uart->div = (baud_multiple + (sysclk_by_100 / 2)) / sysclk_by_100;
 }
@@ -461,10 +476,9 @@ static int lm32uart_verify_port(struct uart_port *port, struct serial_struct *se
 #ifdef CONFIG_SERIAL_LM32_CONSOLE
 static void lm32_console_putchar(struct uart_port *port, int ch)
 {
-	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
-	while((uart->lsr & LM32_UART_LSR_THRE) == 0)
+	while(CSR_UART_UCR & UART_TXBUSY)
 		barrier();
-	uart->rxtx = ch;
+	CSR_UART_RXTX = ch;
 }
 
 /*
@@ -482,8 +496,10 @@ static void lm32_console_write(struct console *co, const char *s, u_int count)
 	uart_console_write(port, s, count, lm32_console_putchar);
 
 	/* Wait for transmitter to become empty and restore interrupts */
+#if 0
 	while((uart->lsr & LM32_UART_LSR_THRE) == 0)
 		barrier();
+#endif
 	uart->ier = priv->ier;
 }
 
@@ -503,8 +519,8 @@ static void __init lm32_console_get_options(struct uart_port *port, int *baud, i
 		line = 0;
 	}
 
-	*baud = lm32tag_uart[line]->baudrate;
-	*bits = lm32tag_uart[line]->databits;
+	*baud = 192000;
+	*bits = 8;
 	*parity = 'o'; /* TODO put parity into LM32TAG_UART */
 }
 
@@ -518,8 +534,10 @@ static int __init lm32_console_setup(struct console *co, char *options)
 	int parity = 'n';
 	int flow = 'n';
 
+#if 0
 	if (port->membase == 0)		/* Port not initialized yet - delay setup */
 		return -ENODEV;
+#endif
 
 	/* disable interrupts */
 	priv->ier = 0; /* TODO: only disable temporarily? */
@@ -531,6 +549,9 @@ static int __init lm32_console_setup(struct console *co, char *options)
 	else
 		lm32_console_get_options(port, &baud, &parity, &bits);
 
+#if 1
+return 0;
+#endif
 	return uart_set_options(port, co, baud, parity, bits, flow);
 }
 
@@ -553,8 +574,13 @@ static int __init lm32_early_console_init(void)
 {
 	if( lm32tag_num_uart > 0 ) {
 		/* first uart device = default console */
+#if 0
 		add_preferred_console(LM32UART_DEVICENAME, lm32uart_default_console_device->id, NULL);
+#endif
+		add_preferred_console(LM32UART_DEVICENAME, 0, NULL);
+#if 0
 		lm32uart_init_port(lm32uart_default_console_device);
+#endif
 		register_console(&lm32_console);
 		pr_info("lm32uart: registered real console\n");
 		return 0;
@@ -570,7 +596,9 @@ console_initcall(lm32_early_console_init);
 static int __init lm32_late_console_init(void)
 {
 	if( lm32tag_num_uart > 0 &&
+#if 0
 			lm32uart_default_console_device &&
+#endif
 			!(lm32_console.flags & CON_ENABLED) ) {
 		register_console(&lm32_console);
 		pr_info("lm32uart: registered real console\n");
@@ -600,10 +628,10 @@ static struct uart_port* __devinit lm32uart_init_port(struct platform_device *pd
 	
 	port = &lm32uart_ports[pdev->id];
 	port->type = PORT_LM32UART;
-	port->iobase = lm32tag_uart[pdev->id]->addr;
-	port->membase = (void __iomem*)lm32tag_uart[pdev->id]->addr;
-	port->irq = lm32tag_uart[pdev->id]->irq;
-	port->uartclk = lm32tag_cpu[0]->frequency * 16;
+	port->iobase = 0;
+	port->membase = (void __iomem*)CSR_UART_RXTX;
+	port->irq = 4;
+	port->uartclk = cpu_frequency * 16;
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
 	port->iotype = UPIO_PORT; // TODO perhaps this is not completely correct
 	port->ops = &lm32uart_pops;
