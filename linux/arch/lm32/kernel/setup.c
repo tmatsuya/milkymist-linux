@@ -74,6 +74,8 @@ unsigned int cpu_frequency;
 unsigned int sdram_start;
 unsigned int sdram_size;
 
+unsigned int lm32tag_num_uart = 1;
+
 void __init setup_arch(char **cmdline_p)
 {
 	/*
