@@ -37,15 +37,19 @@ typedef struct LM32_uart_priv {
 
 /* LM32 UART register layout */
 typedef struct LM32_uart {
+  volatile unsigned int  ucr;
   volatile unsigned int  rxtx;
-  volatile unsigned int  ier;
-  volatile unsigned int  iir;
-  volatile unsigned int  lcr;
-  volatile unsigned int  mcr;
-  volatile unsigned int  lsr;
-  volatile unsigned int  msr;
   volatile unsigned int  div;
+  volatile unsigned int  ier;
 } LM32_uart_t;
+
+/* Milkymist UART */
+#define	LM32_UART_RX_AVAILABLE	0x01
+#define	LM32_UART_RX_ERROR	0x02
+#define	LM32_UART_RX_ACK	0x04
+#define LM32_UART_TX_BUSY	0x08
+#define	LM32_UART_TX_DONE	0x10
+#define	LM32_UART_TX_ACK	0x20
 
 /* IER bit definitions */
 enum {
