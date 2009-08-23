@@ -31,6 +31,7 @@
 extern unsigned int cpu_frequency;
 extern unsigned int sdram_start;
 extern unsigned int sdram_size;
+extern struct platform_device* lm32uart_default_console_device;
 
 #endif /* __KERNEL__ */
 #endif /* #ifndef __ASSEMBLY__ */
