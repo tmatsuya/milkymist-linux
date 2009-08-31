@@ -175,13 +175,11 @@ static struct resource lm32uart_resources[] = {
 		.end = 0x8000000f,
 		.flags = IORESOURCE_MEM,
 	},
-#if 0
 	[1] = {
 		.start = 3,
-		.end = 3,
+		.end = 4,
 		.flags = IORESOURCE_IRQ,
 	},
-#endif
 };
 
 static struct platform_device lm32uart_device = {
