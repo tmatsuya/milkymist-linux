@@ -524,6 +524,12 @@ config MTD_OMAP_NOR
 	  These boards include the Innovator, H2, H3, OSK, Perseus2, and
 	  more.  If you have such a board, say 'Y'.
 
+config MTD_MILKYMIST
+	tristate "Milkymist SoC read-only flash mapping driver"
+	depends on MTD_CFI
+	help
+	  Read-only flash memory access for Milkymist VJ SoC
+
 config MTD_ECP250
 	tristate "Lattice Mico32 eval board ECP250 support"
 	depends on LM32 && MTD_CFI

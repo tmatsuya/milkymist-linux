@@ -72,3 +72,4 @@ obj-$(CONFIG_MTD_OMAP_NOR)	+= omap_nor.o
 obj-$(CONFIG_MTD_MTX1)		+= mtx-1_flash.o
 obj-$(CONFIG_MTD_TQM834x)	+= tqm834x.o
 obj-$(CONFIG_MTD_ECP250)  += ecp250_flash.o
+obj-$(CONFIG_MTD_MILKYMIST)  += milkymist_flash.o
