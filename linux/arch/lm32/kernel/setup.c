@@ -89,6 +89,13 @@ void __init setup_arch(char **cmdline_p)
 
 	/* Keep a copy of command line */
 	*cmdline_p = (char*)_kernel_arg_cmdline;
+
+
+#if defined(CONFIG_BOOTPARAM)
+	/* CONFIG_CMDLINE should override all */
+	strncpy(*cmdline_p, CONFIG_BOOTPARAM_STRING, COMMAND_LINE_SIZE);
+#endif
+
 	memcpy(boot_command_line, *cmdline_p, COMMAND_LINE_SIZE);
 	boot_command_line[COMMAND_LINE_SIZE-1] = 0;
 
@@ -188,7 +195,7 @@ static struct platform_device lm32uart_device = {
 /* setup all devices we find in the hardware setup information */
 static int __init setup_devices(void) {
 	int ret = 0;
-	int i, err;
+	int err;
 
 	err = platform_device_register(&lm32uart_device);
 	if( err ) {
