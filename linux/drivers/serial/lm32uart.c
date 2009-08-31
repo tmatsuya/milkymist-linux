@@ -239,11 +239,7 @@ static void lm32uart_start_tx(struct uart_port *port)
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
-	/* activate transmit hold register interrupt */
-	priv->ier |= LM32_UART_IER_THRI;
-	uart->ier = priv->ier;
-
-	lm32_irq_unmask(port->irq);
+	lm32_irq_unmask(port->irq+1);
 }
 
 static void lm32uart_stop_tx(struct uart_port *port)
@@ -251,12 +247,7 @@ static void lm32uart_stop_tx(struct uart_port *port)
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
-	/* deactivate transmit hold register interrupt */
-	priv->ier &= ~LM32_UART_IER_THRI;
-	uart->ier = priv->ier;
-
-	if( priv->ier == 0 )
-		lm32_irq_mask(port->irq);
+	lm32_irq_mask(port->irq+1);
 }
 
 static void lm32uart_stop_rx(struct uart_port *port)
@@ -264,22 +255,13 @@ static void lm32uart_stop_rx(struct uart_port *port)
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
-	/* deactivate receiver buffer register interrupt */
-	priv->ier &= ~LM32_UART_IER_RBRI;
-	uart->ier = priv->ier;
-
-	if( priv->ier == 0 )
-		lm32_irq_mask(port->irq);
+	lm32_irq_mask(port->irq);
 }
 
 static void lm32uart_enable_ms(struct uart_port *port)
 {
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
-
-	/* activate modem status interrupt */
-	priv->ier |= LM32_UART_IER_MSI;
-	uart->ier = priv->ier;
 
 	lm32_irq_unmask(port->irq);
 }
@@ -294,14 +276,18 @@ static int lm32uart_startup(struct uart_port *port)
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
 	if( request_irq(port->irq, lm32uart_interrupt,
-				IRQF_DISABLED, "lm32uart ISR", port) ) {
-		printk(KERN_NOTICE "Unable to attach LM32 UART interrupt\n");
+				IRQF_DISABLED, "lm32uart ISR RX", port) ) {
+		printk(KERN_NOTICE "Unable to attach LM32 UART RX interrupt\n");
+		return -EBUSY;
+	}
+	if( request_irq(port->irq+1, lm32uart_interrupt,
+				IRQF_DISABLED, "lm32uart ISR TX", port) ) {
+		printk(KERN_NOTICE "Unable to attach LM32 UART TX interrupt\n");
 		return -EBUSY;
 	}
 
-	priv->ier |= LM32_UART_IER_RBRI;
-	uart->ier = priv->ier;
 	lm32_irq_unmask(port->irq);
+	lm32_irq_unmask(port->irq+1);
 
 	return 0;
 }
@@ -311,12 +297,9 @@ static void lm32uart_shutdown(struct uart_port *port)
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
-	/* deactivate uart */
-	priv->ier = 0;
-	uart->ier = priv->ier;
-
 	/* deactivate irq and irq handling */
 	free_irq(port->irq, port);
+	free_irq(port->irq+1, port);
 }
 
 static void lm32uart_set_termios(
@@ -332,9 +315,6 @@ static void lm32uart_set_termios(
 
 	/* deactivate irqs */
 	spin_lock_irqsave(&port->lock, flags);
-
-	/* deactivate uart */
-	uart->ier = 0;
 
 	lm32uart_set_baud_rate(port, baud);
 
@@ -362,11 +342,6 @@ static void lm32uart_set_termios(
 	}
 	if ((termios->c_cflag & CREAD) == 0)
 		port->ignore_status_mask |= LM32_UART_RX_AVAILABLE;
-
-	// TODO MSI configuration?
-
-	/* reactivate uart */
-	uart->ier = priv->ier;
 
 	/* restore irqs */
 	spin_unlock_irqrestore(&port->lock, flags);
@@ -421,9 +396,6 @@ static void lm32_console_write(struct console *co, const char *s, u_int count)
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
-	/* Disable interrupts temporarily */
-	uart->ier = 0; /* original ier still stored in priv->ier */
-
 	uart_console_write(port, s, count, lm32_console_putchar);
 
 	/* Wait for transmitter to become empty and restore interrupts */
@@ -431,7 +403,6 @@ static void lm32_console_write(struct console *co, const char *s, u_int count)
 	while((uart->ucr & LM32_UART_LSR_THRE) == 0)
 		barrier();
 #endif
-	uart->ier = priv->ier;
 }
 
 /*
@@ -468,19 +439,12 @@ static int __init lm32_console_setup(struct console *co, char *options)
 	if (port->membase == 0)		/* Port not initialized yet - delay setup */
 		return -ENODEV;
 
-	/* disable interrupts */
-	priv->ier = 0; /* TODO: only disable temporarily? */
-	uart->ier = priv->ier;
-
 	/* configure */
 	if (options)
 		uart_parse_options(options, &baud, &parity, &bits, &flow);
 	else
 		lm32_console_get_options(port, &baud, &parity, &bits);
 
-#if 1
-return 0;
-#endif
 	return uart_set_options(port, co, baud, parity, bits, flow);
 }
 
@@ -556,11 +520,8 @@ static struct uart_port* __devinit lm32uart_init_port(struct platform_device *pd
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
 	port->iotype = UPIO_PORT; // TODO perhaps this is not completely correct
 	port->ops = &lm32uart_pops;
-	port->line = pdev->id;
-	port->private_data = (void*)&lm32uart_privs[pdev->id];
-	// initialize private data
-	lm32uart_privs[pdev->id].ier = 0;
-	lm32uart_privs[pdev->id].lcr = LM32_UART_LCR_WSL8; // TODO is this initialisation ok?
+	port->line = 0;
+	port->private_data = (void*)&lm32uart_privs[0];
 	return port;
 }
 
@@ -576,8 +537,8 @@ static int __devinit lm32uart_serial_probe(struct platform_device *pdev)
 
 	ret = uart_add_one_port(&lm32uart_driver, port);
 	if (!ret) {
-		pr_info("lm32uart: added port %d with irq %d at 0x%lx\n",
-				port->line, port->irq, (unsigned long)port->membase);
+		pr_info("lm32uart: added port %d with irq %d-%d at 0x%lx\n",
+				port->line, port->irq, port->irq+1, (unsigned long)port->membase);
 		device_init_wakeup(&pdev->dev, 1);
 		platform_set_drvdata(pdev, port);
 	} else
