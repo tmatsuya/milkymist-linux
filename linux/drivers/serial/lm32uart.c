@@ -146,6 +146,7 @@ static void lm32uart_rx_next_char(struct uart_port* port, LM32_uart_t* uart)
 	ucr = uart->ucr;
 	while( ucr & LM32_UART_RX_AVAILABLE ) {
 		ch = uart->rxtx & 0xFF;
+		uart->ucr = LM32_UART_RX_ACK;
 		port->icount.rx++;
 
 		flg = TTY_NORMAL;
