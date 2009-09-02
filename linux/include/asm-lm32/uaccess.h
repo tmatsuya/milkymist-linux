@@ -49,7 +49,7 @@ static inline int _access_ok(unsigned long addr, unsigned long size)
 	return
 		(addr >= physical_memory_start) &&
 		(addr < physical_memory_end) &&
-		((addr+size) < physical_memory_end);
+		((addr+size) <= physical_memory_end);
 }
 
 /*
