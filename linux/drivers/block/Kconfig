@@ -430,7 +430,7 @@ source "drivers/s390/block/Kconfig"
 
 config XILINX_SYSACE
 	tristate "Xilinx SystemACE support"
-	depends on 4xx
+	depends on 4xx || LM32
 	help
 	  Include support for the Xilinx SystemACE CompactFlash interface
 
