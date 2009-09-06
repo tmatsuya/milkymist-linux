@@ -83,9 +83,9 @@ void __init setup_arch(char **cmdline_p)
 	 */
 	lm32_current_thread = (struct thread_info*)&init_thread_union;
 
-	cpu_frequency = 100000000;
-	sdram_start = 0x40000000;
-	sdram_size = 64*1024*1024;
+	cpu_frequency = (unsigned long)CONFIG_CPU_CLOCK;
+	sdram_start = (unsigned long)CONFIG_MEMORY_START;
+	sdram_size = (unsigned long)CONFIG_MEMORY_SIZE;
 
 	/* Keep a copy of command line */
 	*cmdline_p = (char*)_kernel_arg_cmdline;
