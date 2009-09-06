@@ -10,7 +10,6 @@ config LM32
 	bool
 	default y
 	select CPU_MICO32
-	select BOARD_ECP250
 
 config MMU
 	bool
@@ -97,37 +96,8 @@ config IPIPE_TRACE_MCOUNTS
 	default n
 
 source "init/Kconfig"
-source "kernel/ipipe/Kconfig"
 
-menu "Processor, Board and Features"
-
-choice
-	prompt "CPU"
-	default CPU_MICO32
-
-config CPU_MICO32
-	bool "mico32"
-	help
-	  Lattice mico32 processor.
-
-endchoice
-
-choice
-	prompt "Board"
-	default BOARD_ECP250
-
-config BOARD_ECP250
-	bool "ecp250"
-	help
-	  ECP250 evaluation board.
-
-endchoice
-
-config TEXT_OFFSET
-	hex "Set the text offset in memory"
-	default "0x00000000"
-	help
-	  Define where the kernel will be loaded to and executed from.
+source "arch/lm32/Kconfig.cpu"
 
 config HZ
 	int
@@ -143,18 +113,6 @@ config EARLY_PRINTK
 	  This is useful for kernel debugging when your machine crashes very
 	  early before the console code is initialized. You should normally
 		say N here, unless you want to debug.
-
-config LM32_HW_JTAG
-       bool "Disable kernel exception handling (enable JTAG debugging)"
-       default n
-       help
-         This option disables the exception handling within the kernel. It is
-         required to allow access with the JTAG debugger for kernel-level 
-         debug access.
-
-         Your should normally say N here, unless you want to debug.
-
-endmenu
 
 menu "Executable file formats"
 
