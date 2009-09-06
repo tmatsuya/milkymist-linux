@@ -1,0 +1,104 @@
+menu "Processor, Board and Features"
+
+choice
+	prompt "LM32 platform"
+	default PLAT_MILKYMIST
+
+config PLAT_MILKYMIST
+	bool "milkymist"
+	help
+	  Milkymist board.
+
+config PLAT_ECP250
+	bool "ecp250"
+	help
+	  ECP250 evaluation board.
+
+endchoice
+
+if (PLAT_MILKYMIST)
+choice
+	prompt "CPU"
+	default CPU_MICO32
+
+config CPU_MICO32
+	bool "mico32"
+	help
+	  Lattice mico32 processor.
+endchoice
+
+choice
+	prompt "Board Selection"
+	default BOARD_XILINX_ML401
+
+config	BOARD_XILINX_ML401
+	bool "Xilinx ML401"
+
+config	BOARD_AVNET_SP3A
+	bool "Avnet-sp3aevl"
+
+config	BOARD_MILKYMIST_CUSTOM
+	bool "Milkymist Custom PCB"
+endchoice
+endif
+
+if (PLAT_ECP250)
+choice
+	prompt "CPU"
+	default CPU_MICO32
+
+config CPU_MICO32
+	bool "mico32"
+	help
+	  Lattice mico32 processor.
+endchoice
+
+choice
+	prompt "Board Selection"
+	default BOARD_LATTICE_ECP250
+
+config	BOARD_LATTICE_ECP250
+	bool "Lattice ECP250"
+
+endchoice
+endif
+
+
+config CPU_CLOCK
+	int "CPU Clock [Hz] (integer)"
+	default "100000000" if BOARD_XILINX_ML401
+	default "75000000"  if BOARD_AVNET_SP3A
+	default "100000000" if BOARD_MILKYMIST_CUSTOM
+	default "75000000"  if BOARD_LATTICE_ECP250
+
+config MEMORY_START
+	hex "Physical memory start address (hex)"
+	default "0x40000000"  if BOARD_XILINX_ML401
+	default "0x00000000"  if BOARD_AVNET_SP3A
+	default "0x40000000"  if BOARD_MILKYMIST_CUSTOM
+	default "0x08000000"  if BOARD_LATTICE_ECP250
+
+config MEMORY_SIZE
+	hex "Physical memory size (hex)"
+	default "0x04000000"  if BOARD_XILINX_ML401
+	default "0x04000000"  if BOARD_AVNET_SP3A
+	default "0x04000000"  if BOARD_MILKYMIST_CUSTOM
+	default "0x04000000"  if BOARD_LATTICE_ECP250
+
+config TEXT_OFFSET
+	hex "Set the text offset in memory"
+	default "0x00000000"
+	help
+	  Define where the kernel will be loaded to and executed from.
+
+
+config LM32_HW_JTAG
+bool "Disable kernel exception handling (enable JTAG debugging)"
+	default n
+	help
+	  This option disables the exception handling within the kernel. It is
+	  required to allow access with the JTAG debugger for kernel-level
+	  debug access.
+
+	  Your should normally say N here, unless you want to debug.
+endmenu
