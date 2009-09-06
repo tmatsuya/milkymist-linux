@@ -34,11 +34,8 @@ choice
 config	BOARD_XILINX_ML401
 	bool "Xilinx ML401"
 
-config	BOARD_AVNET_SP3A
-	bool "Avnet-sp3aevl"
-
-config	BOARD_MILKYMIST_CUSTOM
-	bool "Milkymist Custom PCB"
+config	BOARD_MILKYMIST_ONE
+	bool "Milkymist One"
 endchoice
 endif
 
@@ -63,37 +60,31 @@ config	BOARD_LATTICE_ECP250
 endchoice
 endif
 
-
 config CPU_CLOCK
 	int "CPU Clock [Hz] (integer)"
 	default "100000000" if BOARD_XILINX_ML401
-	default "75000000"  if BOARD_AVNET_SP3A
-	default "100000000" if BOARD_MILKYMIST_CUSTOM
+	default "100000000" if BOARD_MILKYMIST_ONE
 	default "75000000"  if BOARD_LATTICE_ECP250
 
 config MEMORY_START
 	hex "Physical memory start address (hex)"
 	default "0x40000000"  if BOARD_XILINX_ML401
-	default "0x00000000"  if BOARD_AVNET_SP3A
-	default "0x40000000"  if BOARD_MILKYMIST_CUSTOM
+	default "0x40000000"  if BOARD_MILKYMIST_ONE
 	default "0x08000000"  if BOARD_LATTICE_ECP250
 
 config MEMORY_SIZE
 	hex "Physical memory size (hex)"
 	default "0x04000000"  if BOARD_XILINX_ML401
-	default "0x04000000"  if BOARD_AVNET_SP3A
-	default "0x04000000"  if BOARD_MILKYMIST_CUSTOM
+	default "0x04000000"  if BOARD_MILKYMIST_ONE
 	default "0x04000000"  if BOARD_LATTICE_ECP250
 
 config TEXT_OFFSET
 	hex "Set the text offset in memory"
 	default "0x40000000"  if BOARD_XILINX_ML401
-	default "0x00000000"  if BOARD_AVNET_SP3A
-	default "0x40000000"  if BOARD_MILKYMIST_CUSTOM
+	default "0x40000000"  if BOARD_MILKYMIST_ONE
 	default "0x08000000"  if BOARD_LATTICE_ECP250
 	help
 	  Define where the kernel will be loaded to and executed from.
-
 
 config LM32_HW_JTAG
 bool "Disable kernel exception handling (enable JTAG debugging)"

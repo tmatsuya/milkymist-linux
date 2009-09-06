@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.23
-# Sun Sep  6 18:01:20 2009
+# Sun Sep  6 20:59:04 2009
 #
 CONFIG_LM32=y
 # CONFIG_MMU is not set
@@ -105,8 +105,7 @@ CONFIG_PLAT_MILKYMIST=y
 # CONFIG_PLAT_ECP250 is not set
 CONFIG_CPU_MICO32=y
 CONFIG_BOARD_XILINX_ML401=y
-# CONFIG_BOARD_AVNET_SP3A is not set
-# CONFIG_BOARD_MILKYMIST_CUSTOM is not set
+# CONFIG_BOARD_MILKYMIST_ONE is not set
 # CONFIG_LM32_HW_JTAG is not set
 CONFIG_HZ=100
 # CONFIG_EARLY_PRINTK is not set
