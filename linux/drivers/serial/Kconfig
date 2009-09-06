@@ -1259,18 +1259,18 @@ config SERIAL_OF_PLATFORM
 	  Currently, only 8250 compatible ports are supported, but
 	  others can easily be added.
 
-config SERIAL_LM32
-	bool "Enable Lattice Mico32 UART driver"
+config SERIAL_MILKYMIST
+	bool "Enable Milkymist UART driver"
 	depends on LM32
 	select SERIAL_CORE
 	help
-	  Enable LM32 UART driver.
+	  Enable Milkymist UART driver.
 
-config SERIAL_LM32_CONSOLE
-	bool "Enable Lattice Mico32 UART driver as system console"
-	depends on SERIAL_LM32
+config SERIAL_MILKYMIST_CONSOLE
+	bool "Enable Milkymist UART driver as system console"
+	depends on SERIAL_MILKYMIST
 	select SERIAL_CORE_CONSOLE
 	help
-	  Allow to use the LM32 UART driver as system console.
+	  Allow to use the Milkymist UART driver as system console.
 
 endmenu

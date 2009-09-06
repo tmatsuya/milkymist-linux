@@ -64,4 +64,4 @@ obj-$(CONFIG_SERIAL_UARTLITE) += uartlite.o
 obj-$(CONFIG_SERIAL_NETX) += netx-serial.o
 obj-$(CONFIG_SERIAL_OF_PLATFORM) += of_serial.o
 obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
-obj-$(CONFIG_SERIAL_LM32) += lm32uart.o
+obj-$(CONFIG_SERIAL_MILKYMIST) += milkymist_uart.o

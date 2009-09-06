@@ -183,7 +183,7 @@ static struct resource lm32uart_resources[] = {
 };
 
 static struct platform_device lm32uart_device = {
-	.name = "lm32uart",
+	.name = "milkymist_uart",
 	.id = 0,
 	.num_resources = ARRAY_SIZE(lm32uart_resources),
 	.resource = lm32uart_resources,
@@ -197,7 +197,7 @@ static int __init setup_devices(void) {
 
 	err = platform_device_register(&lm32uart_device);
 	if( err ) {
-		printk(KERN_ERR "could not register 'lm32uart'error:%d\n", err);
+		printk(KERN_ERR "could not register 'milkymist_uart'error:%d\n", err);
 		ret = err;
 	}
 

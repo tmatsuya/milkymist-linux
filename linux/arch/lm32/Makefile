@@ -24,7 +24,6 @@
 
 board-$(CONFIG_BOARD_XILINX_ML401)	:= ml401
 board-$(CONFIG_BOARD_MILKYMIST_ONE)	:= milkymist-one
-board-$(CONFIG_BOARD_LATTICE_ECP250)	:= ecp250
 BOARD := $(board-y)
 
 export BOARD
