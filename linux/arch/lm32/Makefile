@@ -22,7 +22,9 @@
 # MA 02111-1307 USA
 #
 
-board-$(CONFIG_ECP250)		:= ecp250
+board-$(CONFIG_BOARD_LATTICE_ECP250)	:= ecp250
+board-$(CONFIG_BOARD_XILINX_ML401)	:= ml401
+board-$(CONFIG_BOARD_AVNET_SP3A)	:= sp3a
 BOARD := $(board-y)
 
 export BOARD
