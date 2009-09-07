@@ -189,6 +189,23 @@ static struct platform_device lm32uart_device = {
 	.resource = lm32uart_resources,
 };
 
+#ifdef CONFIG_BOARD_XILINX_ML401
+static struct resource lm32sysace_resources[] = {
+	[0] = {
+		.start = 0xa0000000,
+		.end = 0xa00000ff,
+		.flags = IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device lm32sysace_device = {
+	.name = "xsysace",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(lm32sysace_resources),
+	.resource = lm32sysace_resources,
+};
+#endif
+
 
 /* setup all devices we find in the hardware setup information */
 static int __init setup_devices(void) {
@@ -200,6 +217,14 @@ static int __init setup_devices(void) {
 		printk(KERN_ERR "could not register 'milkymist_uart'error:%d\n", err);
 		ret = err;
 	}
+
+#ifdef CONFIG_BOARD_XILINX_ML401
+	err = platform_device_register(&lm32sysace_device);
+	if( err ) {
+		printk(KERN_ERR "could not register 'milkymist_sysace'error:%d\n", err);
+		ret = err;
+	}
+#endif
 
 	return ret;
 }

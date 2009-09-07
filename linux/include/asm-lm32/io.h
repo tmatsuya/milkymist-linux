@@ -134,6 +134,13 @@ static inline void insl(unsigned int addr, void *buf, int len)
 #define outw_p(x,addr) outw(x,addr)
 #define outl_p(x,addr) outl(x,addr)
 
+#define in_8(addr)     readb(addr)
+#define in_be16(addr)  readw(addr)
+#define in_le16(addr)  _swapw((unsigned short)readw(addr))
+#define out_8(b, addr) ((void) writeb(b,addr))
+#define out_be16(b, addr) ((void)writew(b,addr))
+#define out_le16(b, addr) ((void)writew(_swapw((unsigned short)b),addr))
+
 #define IO_SPACE_LIMIT 0xffff
 
 

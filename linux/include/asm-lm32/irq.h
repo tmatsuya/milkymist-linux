@@ -30,6 +30,8 @@
 /* # of lm32 irq levels */
 #define NR_IRQLVL	1
 
+#define	NO_IRQ		(-1)
+
 /* LM32: we always use the first timer in the hardware-description as the system timer */
 extern unsigned int  lm32_core_timer_irq;
 
