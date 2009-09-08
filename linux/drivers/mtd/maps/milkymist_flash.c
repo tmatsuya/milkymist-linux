@@ -45,7 +45,7 @@ static struct mtd_partition milkymist_partitions[] = {
 	}
 };
 
-static struct map_info milkymist_map[0] = {
+static struct map_info milkymist_map[1] = {
 	{
 		/* .name will be set from lm32tag_flash */
 		/* .phys will be set from lm32tag_flash */
