@@ -1836,9 +1836,10 @@ config FB_XILINX
 config FB_MILKYMIST
 	bool "Milkymist framebuffer support"
 	depends on (FB = y) && PLAT_MILKYMIST
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
+	select FB_SYS_FILLRECT
+	select FB_SYS_COPYAREA
+	select FB_SYS_IMAGEBLIT
+	select FB_SYS_FOPS
 	help
 	  Say Y here to enable support for Milkymist RGB Framebuffer
 
