@@ -72,7 +72,7 @@ static struct fb_fix_screeninfo milkymistfb_fix __initdata = {
 	.type =		FB_TYPE_PACKED_PIXELS,
 	.visual =	FB_VISUAL_TRUECOLOR,
 	.smem_len = 	(640*480*2),
-	.line_length =	480,
+	.line_length =	640*2,
 	.accel =	FB_ACCEL_NONE,
 };
 
@@ -90,6 +90,7 @@ static int milkymistfb_mmap(struct fb_info *info,
 		    struct vm_area_struct *vma);
 
 static struct fb_ops milkymistfb_ops = {
+	.owner		= THIS_MODULE,
 	.fb_read        = fb_sys_read,
 	.fb_write       = fb_sys_write,
 	.fb_check_var	= milkymistfb_check_var,
@@ -431,11 +432,7 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	info->screen_base = (char __iomem *)videomemory;
 	info->fbops = &milkymistfb_ops;
 
-	retval = fb_find_mode(&info->var, info, NULL,
-			      NULL, 0, NULL, 8);
-
-	if (!retval || (retval == 4))
-		info->var = milkymistfb_default;
+	info->var = milkymistfb_default;
 	info->fix = milkymistfb_fix;
 	info->pseudo_palette = info->par;
 	info->par = NULL;
@@ -451,8 +448,11 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	platform_set_drvdata(dev, info);
 
 	printk(KERN_INFO
-	       "fb%d: Milkymist frame buffer device at %X, using %ldK of video memory\n",
+	       "fb%d: Milkymist frame buffer at %X, size %ld k\n",
 	       info->node, videomemory, videomemorysize >> 10);
+	printk(KERN_INFO
+	       "fb%d: mode is 640x480x16\n",
+	       info->node);
 
        CSR_VGA_BASEADDRESS = videomemory;
 

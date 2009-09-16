@@ -99,6 +99,10 @@ void __init setup_arch(char **cmdline_p)
 	memcpy(boot_command_line, *cmdline_p, COMMAND_LINE_SIZE);
 	boot_command_line[COMMAND_LINE_SIZE-1] = 0;
 
+#ifdef CONFIG_DUMMY_CONSOLE
+        conswitchp = &dummy_con;
+#endif
+
 #ifdef CONFIG_EARLY_PRINTK
 	{
 		extern void setup_early_printk(void);
