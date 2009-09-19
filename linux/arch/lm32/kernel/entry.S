@@ -166,11 +166,6 @@ ENTRY(system_call)
 	lw	ra, (sp+120)
 #endif /* CONFIG_IPIPE */
 
-	/* activate interrupts again */
-	rcsr	r7, IE
-	ori   r7, r7, 1
-	wcsr  IE, r7
-
 	/* r7 always holds the pointer to struct pt_regs */
 	addi  r7, sp, 4
 
@@ -216,10 +211,6 @@ ENTRY(system_call)
 	calli lm32_debug_syscall_ret /* debug */
 #endif
 
-	/* deactivate interrupts */
-	rcsr	r7, IE
-	andi r7, r7, 6
-	wcsr IE, r7
 	bi      _restore_and_return_exception
 
 .badsyscall:
@@ -231,10 +222,6 @@ ENTRY(system_call)
 #endif
 	mvi r1, -ENOSYS
 
-	/* deactivate interrupts */
-	rcsr	r7, IE
-	andi r7, r7, 6
-	wcsr IE, r7
 	bi      _restore_and_return_exception
 
 /* end of exception handlers */
@@ -305,10 +292,6 @@ label: \
 	calli manage_signals; \
 	sw (sp+8), r1; /* store return value into pt_regs */ \
 	EXCEPTION_RETURN_PATH_DEBUG \
-	/* deactivate interrupts */ \
-	rcsr	r7, IE; \
-	andi r7, r7, 6; \
-	wcsr IE, r7; \
 	bi branch_to
 
 EXCEPTION_RETURN_PATH(_return_from_exception, _restore_and_return_exception)
