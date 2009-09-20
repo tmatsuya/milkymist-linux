@@ -165,6 +165,13 @@ config SERIO_LIBPS2
 	  To compile this driver as a module, choose M here: the
 	  module will be called libps2.
 
+config SERIO_MILKBD
+	tristate "Milkymist ps2 controller(TEST)"
+	depends on PLAT_MILKYMIST
+	help
+	  Say Y here if you have the Milkymist and want to use an AT
+	  keyboard connected to its keyboard controller.
+
 config SERIO_RAW
 	tristate "Raw access to serio ports"
 	help

@@ -210,6 +210,27 @@ static struct platform_device lm32sysace_device = {
 };
 #endif
 
+#if defined(CONFIG_BOARD_XILINX_ML401) && defined(CONFIG_SERIO_MILKBD)
+static struct resource lm32milkbd_resources[] = {
+	[0] = {
+		.start = 0x80007000,
+		.end = 0x80007000,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = 11,
+		.end = 11,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device lm32milkbd_device = {
+	.name = "milkbd",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(lm32milkbd_resources),
+	.resource = lm32milkbd_resources,
+};
+#endif
 
 /* setup all devices we find in the hardware setup information */
 static int __init setup_devices(void) {
@@ -226,6 +247,14 @@ static int __init setup_devices(void) {
 	err = platform_device_register(&lm32sysace_device);
 	if( err ) {
 		printk(KERN_ERR "could not register 'milkymist_sysace'error:%d\n", err);
+		ret = err;
+	}
+#endif
+
+#if defined(CONFIG_BOARD_XILINX_ML401) && defined(CONFIG_SERIO_MILKBD)
+	err = platform_device_register(&lm32milkbd_device);
+	if( err ) {
+		printk(KERN_ERR "could not register 'milkymist_ps2kbd'error:%d\n", err);
 		ret = err;
 	}
 #endif

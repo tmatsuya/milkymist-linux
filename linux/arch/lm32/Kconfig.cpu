@@ -57,6 +57,21 @@ config TEXT_OFFSET
 	help
 	  Define where the kernel will be loaded to and executed from.
 
+config HZ
+	int
+	default 100
+
+config EARLY_PRINTK
+	bool "Early printk"
+	default y
+	help
+	  This option enables special console drivers which allow the kernel
+	  to print messages very early in the bootup process.
+
+	  This is useful for kernel debugging when your machine crashes very
+	  early before the console code is initialized. You should normally
+	        say N here, unless you want to debug.
+
 config LM32_HW_JTAG
 bool "Disable kernel exception handling (enable JTAG debugging)"
 	default n

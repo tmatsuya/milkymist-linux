@@ -99,21 +99,6 @@ source "init/Kconfig"
 
 source "arch/lm32/Kconfig.cpu"
 
-config HZ
-	int
-	default 100
-
-config EARLY_PRINTK
-	bool "Early printk"
-	default y
-	help
-	  This option enables special console drivers which allow the kernel
-	  to print messages very early in the bootup process.
-
-	  This is useful for kernel debugging when your machine crashes very
-	  early before the console code is initialized. You should normally
-		say N here, unless you want to debug.
-
 menu "Executable file formats"
 
 source "fs/Kconfig.binfmt"
