@@ -96,11 +96,13 @@ void machine_restart(char * __unused)
 	asm volatile(
 		"wcsr IE, r0\n"
 		"wcsr IM, r0\n"
-		"ori r1, r0, 0xffff\n"
+		"wcsr EBA, r0\n"
+		"rcsr r1, IP\n"
 		"wcsr IP, r1\n"
 		"nop\n"
 		"nop\n"
 		"call r0\n"
+		"nop\n"
 	);
 }
 
