@@ -93,20 +93,29 @@ void cpu_idle(void)
 
 void machine_restart(char * __unused)
 {
-	printk("%s:%d: machine_restart() is not possible on lm32\n", __FILE__, __LINE__);
-	for (;;);
+	asm volatile(
+		"wcsr IE, r0\n"
+		"wcsr IM, r0\n"
+		"ori r1, r0, 0xffff\n"
+		"wcsr IP, r1\n"
+		"nop\n"
+		"nop\n"
+		"call r0\n"
+	);
 }
 
 void machine_halt(void)
 {
 	printk("%s:%d: machine_halt() is not possible on lm32\n", __FILE__, __LINE__);
-	for (;;);
+	for (;;)
+		cpu_relax();
 }
 
 void machine_power_off(void)
 {
 	printk("%s:%d: machine_poweroff() is not possible on lm32\n", __FILE__, __LINE__);
-	for (;;);
+	for (;;)
+		cpu_relax();
 }
 
 void show_regs(struct pt_regs * regs)
