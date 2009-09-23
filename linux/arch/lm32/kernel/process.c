@@ -101,7 +101,12 @@ void machine_restart(char * __unused)
 		"wcsr IP, r1\n"
 		"nop\n"
 		"nop\n"
+#if defined(CONFIG_PLAT_MILKYMIST)
+		"mvi r1, 0x100\n"
+		"call r1\n"
+#else
 		"call r0\n"
+#endif
 		"nop\n"
 	);
 }
