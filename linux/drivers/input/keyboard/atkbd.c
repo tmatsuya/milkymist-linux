@@ -665,6 +665,7 @@ static int atkbd_probe(struct atkbd *atkbd)
  * these systems the BIOS also usually doesn't do it for us.
  */
 
+#if 0
 	if (atkbd_reset)
 		if (ps2_command(ps2dev, NULL, ATKBD_CMD_RESET_BAT))
 			printk(KERN_WARNING "atkbd.c: keyboard reset failed on %s\n", ps2dev->serio->phys);
@@ -701,6 +702,7 @@ static int atkbd_probe(struct atkbd *atkbd)
 		printk(KERN_ERR "atkbd.c: controllers. Use i8042.direct=1 to disable translation.\n");
 		return -1;
 	}
+#endif
 
 	return 0;
 }
