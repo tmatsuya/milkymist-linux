@@ -110,6 +110,7 @@ static void lm32uart_tx_next_char(struct uart_port* port, LM32_uart_t* uart)
 	/* interrupt already cleared */
 	struct circ_buf *xmit = &(port->info->xmit);
 
+	uart->ucr = LM32_UART_TX_ACK;
 	if (port->x_char) {
 		/* send xon/xoff character */
 		uart->rxtx = port->x_char;
@@ -134,6 +135,7 @@ static void lm32uart_tx_next_char(struct uart_port* port, LM32_uart_t* uart)
 
 	if (uart_circ_empty(xmit))
 		lm32uart_stop_tx(port);
+
 }
 
 static void lm32uart_rx_next_char(struct uart_port* port, LM32_uart_t* uart)
@@ -197,14 +199,14 @@ static irqreturn_t lm32uart_interrupt(int irq, void* portarg)
 	/* get interrupt source */
 	unsigned long intr_src;
 
-	if (uart->ucr & LM32_UART_RX_AVAILABLE)
+	if (irq == (port->irq))
 	{
 		/* data ready in buffer -> receive character */
 		lm32uart_rx_next_char(port, uart);
 		return IRQ_HANDLED;
 	}
 
-	if (uart->ucr & LM32_UART_TX_DONE)
+	if (irq == ((port->irq)+1))
 	{
 		/* transmit register empty -> can send next byte */
 		lm32uart_tx_next_char(port, uart);
