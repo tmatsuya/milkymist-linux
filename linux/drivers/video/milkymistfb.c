@@ -454,8 +454,9 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	       "fb%d: mode is 640x480x16\n",
 	       info->node);
 
-       CSR_VGA_BASEADDRESS = videomemory;
-
+	CSR_VGA_BASEADDRESS = videomemory;
+	CSR_VGA_RESET = 0;
+       
 	return 0;
 err2:
 	fb_dealloc_cmap(&info->cmap);
@@ -469,6 +470,8 @@ err:
 static int milkymistfb_remove(struct platform_device *dev)
 {
 	struct fb_info *info = platform_get_drvdata(dev);
+
+	CSR_VGA_RESET = VGA_RESET;
 
 	if (info) {
 		unregister_framebuffer(info);
