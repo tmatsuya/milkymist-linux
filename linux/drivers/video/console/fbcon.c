@@ -440,6 +440,25 @@ static irqreturn_t fb_vbl_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 #endif
+
+#ifdef CONFIG_PLAT_MILKYMIST
+#ifndef	FMLBRG_FLUSH_BASE
+#define	FMLBRG_FLUSH_BASE	(0x44000000)
+#define	FMLBRG_LINE_LENGTH	(32)
+#define	FMLBRG_LINE_COUNT	(512)
+#endif
+void flush_bridge_cache()
+{
+        volatile char *flushbase = (char *)FMLBRG_FLUSH_BASE;
+        int i, offset;
+
+        offset = 0;
+        for(i=0;i<FMLBRG_LINE_COUNT;i++) {
+                flushbase[offset] = 0;
+                offset += FMLBRG_LINE_LENGTH;
+        }
+}
+#endif
 	
 static void cursor_timer_handler(unsigned long dev_addr)
 {
@@ -447,6 +466,9 @@ static void cursor_timer_handler(unsigned long dev_addr)
 	struct fbcon_ops *ops = info->fbcon_par;
 
 	schedule_work(&info->queue);
+#ifdef CONFIG_PLAT_MILKYMIST
+	flush_bridge_cache();
+#endif
 	mod_timer(&ops->cursor_timer, jiffies + HZ/5);
 }
 
