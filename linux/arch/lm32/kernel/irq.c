@@ -54,7 +54,9 @@ void lm32_irq_mask(unsigned int irq)
 
 	local_irq_save_hw(flags);
 
+#ifdef CONFIG_IPIPE
 	ipipe_irq_lock(irq);
+#endif
 
 	mask &= lm32_current_irq_mask;
 	lm32_current_irq_mask = mask;
@@ -83,7 +85,9 @@ void lm32_irq_unmask(unsigned int irq)
 		 */
 		asm volatile ("wcsr IM, %0" : : "r"(mask));
 
+#ifdef CONFIG_IPIPE
 		ipipe_irq_unlock(irq);
+#endif
 
 		local_irq_restore_hw(flags);
 	}
@@ -208,36 +212,23 @@ asmlinkage void asm_do_IRQ(unsigned long vec, struct pt_regs *regs)
 {
 	struct pt_regs *old_regs;
 	struct irq_desc *desc;
-	unsigned int irq = 0;
-#ifndef CONFIG_IPIPE
-	unsigned long mask = 1;
-#endif
+	unsigned int irq;
 	
 	old_regs = set_irq_regs(regs);
 
+	irq_enter();
+
 #ifndef CONFIG_IPIPE
 	/* decode irq */
-	while( (vec & mask) == 0 && (mask != 0) ) {
-		irq++;
-		mask = mask + mask;
+	for (irq=0 ; irq<32; ++irq ) {
+		if ( vec & (1 << irq) ) {
+			/* acknowledge */
+			lm32_irq_ack(irq);
+			generic_handle_irq(irq);
+		}
 	}
-#else
-	irq = vec;
 #endif
 
-	/*
-	 * Some hardware gives randomly wrong interrupts.  Rather
-	 * than crashing, do something sensible.
-	 */
-	if (irq >= NR_IRQS)
-		desc = &bad_irq_desc;
-
-	irq_enter();
-#ifndef CONFIG_IPIPE
-	/* acknowledge */
-	lm32_irq_ack(irq);
-#endif
-	generic_handle_irq(irq);
 	irq_exit();
 
 	set_irq_regs(old_regs);
