@@ -75,7 +75,8 @@ static void lm32uart_config_port(struct uart_port *port, int flags);
 static int lm32uart_verify_port(struct uart_port *port, struct serial_struct *ser);
 
 static inline void lm32uart_set_baud_rate(struct uart_port *port, unsigned long baud);
-static irqreturn_t lm32uart_interrupt(int irq, void* portarg);
+static irqreturn_t lm32uart_irq_rx(int irq, void* portarg);
+static irqreturn_t lm32uart_irq_tx(int irq, void* portarg);
 
 static struct uart_ops lm32uart_pops = {
 	.tx_empty	= lm32uart_tx_empty,
@@ -190,7 +191,7 @@ static void lm32uart_rx_next_char(struct uart_port* port, LM32_uart_t* uart)
 	tty_flip_buffer_push(tty);
 }
 
-static irqreturn_t lm32uart_interrupt(int irq, void* portarg)
+static irqreturn_t lm32uart_irq_rx(int irq, void* portarg)
 {
 	struct uart_port* port = (struct uart_port*)portarg;
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
@@ -199,21 +200,23 @@ static irqreturn_t lm32uart_interrupt(int irq, void* portarg)
 	/* get interrupt source */
 	unsigned long intr_src;
 
-	if (irq == (port->irq))
-	{
-		/* data ready in buffer -> receive character */
-		lm32uart_rx_next_char(port, uart);
-		return IRQ_HANDLED;
-	}
+	/* data ready in buffer -> receive character */
+	lm32uart_rx_next_char(port, uart);
+	return IRQ_HANDLED;
+}
 
-	if (irq == ((port->irq)+1))
-	{
-		/* transmit register empty -> can send next byte */
-		lm32uart_tx_next_char(port, uart);
-		return IRQ_HANDLED;
-	}
+static irqreturn_t lm32uart_irq_tx(int irq, void* portarg)
+{
+	struct uart_port* port = (struct uart_port*)portarg;
+	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
+	irqreturn_t ret = IRQ_NONE;
 
-	return ret;
+	/* get interrupt source */
+	unsigned long intr_src;
+
+	/* transmit register empty -> can send next byte */
+	lm32uart_tx_next_char(port, uart);
+	return IRQ_HANDLED;
 }
 
 static unsigned int lm32uart_tx_empty(struct uart_port *port)
@@ -278,12 +281,12 @@ static int lm32uart_startup(struct uart_port *port)
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	LM32_uart_priv_t* priv = (LM32_uart_priv_t*)port->private_data;
 
-	if( request_irq(port->irq, lm32uart_interrupt,
+	if( request_irq(port->irq, lm32uart_irq_rx,
 				IRQF_DISABLED, "milkymist_uart RX", port) ) {
 		printk(KERN_NOTICE "Unable to attach Milkymist UART RX interrupt\n");
 		return -EBUSY;
 	}
-	if( request_irq(port->irq+1, lm32uart_interrupt,
+	if( request_irq(port->irq+1, lm32uart_irq_tx,
 				IRQF_DISABLED, "milkymist_uart TX", port) ) {
 		printk(KERN_NOTICE "Unable to attach Milkymist UART TX interrupt\n");
 		return -EBUSY;
