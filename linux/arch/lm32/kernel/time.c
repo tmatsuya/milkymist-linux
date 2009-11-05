@@ -76,7 +76,6 @@ void lm32_systimer_ack(void)
 	lm32_cycles += CSR_TIMER0_COMPARE;
 	/* ack interrupt */
 	CSR_TIMER0_CONTROL = CSR_TIMER0_CONTROL;
-	lm32_irq_ack(IRQ_SYSTMR);
 }
 
 /*
