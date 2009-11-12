@@ -46,10 +46,6 @@ MODULE_LICENSE("GPL");
  *  * Register numbers.
  *  */
 #define	PS2_DATA_REG	0x80007000
-#define	PS2_INT_REG	0x80007004
-
-#define PS2_RXDONE	(0x01)
-
 
 static int milkbd_write(struct serio *port, unsigned char val)
 {
@@ -68,8 +64,6 @@ static irqreturn_t milkbd_rx(int irq, void *dev_id)
 	struct serio *port = dev_id;
 	unsigned int byte;
 	int handled = IRQ_NONE;
-
-	writel(PS2_RXDONE, PS2_INT_REG);		// IRQ ack
 
 	byte = readl(PS2_DATA_REG);
 	serio_interrupt(port, byte, 0);
