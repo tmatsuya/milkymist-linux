@@ -43,6 +43,7 @@
 
 //#include <asm/machdep.h>
 #include <asm/io.h>
+#include <asm/irq.h>
 #include <asm/irq_regs.h>
 #include <asm/setup.h>
 #include <asm/uaccess.h>
@@ -53,11 +54,8 @@
 #define CSR_TIMER0_COMPARE	MMPTR(0x80001014)
 #define CSR_TIMER0_COUNTER	MMPTR(0x80001018)
 
-#define TIMER_MATCH		(0x01)
+#define TIMER_ENABLE		(0x01)
 #define TIMER_AUTORESTART	(0x02)
-#define TIMER_ENABLE		(0x04)
-
-unsigned int lm32_core_timer_irq = 1;
 
 cycles_t lm32_cycles = 0;
 
@@ -108,8 +106,6 @@ void time_init(void)
 	xtime.tv_nsec = 0;
 
 	wall_to_monotonic.tv_sec = -xtime.tv_sec;
-
-	lm32_core_timer_irq = 1;
 
 	lm32_systimer_program(1, cpu_frequency / HZ);
 
