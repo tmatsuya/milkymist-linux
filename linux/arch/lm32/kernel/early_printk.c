@@ -34,24 +34,18 @@
 #include <linux/console.h>
 #include <linux/init.h>
 #include <linux/string.h>
-#include <asm-lm32/setup.h>
+#include <asm/setup.h>
+#include <asm/irq.h>
 
 #define MMPTR(x) (*((volatile unsigned int *)(x)))
-#define CSR_UART_UCR 		MMPTR(0x80000000)
-#define CSR_UART_RXTX 		MMPTR(0x80000004)
-
-#define UART_DR			(0x01)
-#define UART_ERR		(0x02)
-#define UART_BUSY		(0x04)
-
-#define UART_TXBUSY		(0x08)
-#define UART_TXDONE		(0x10)
-#define UART_TXACK		(0x20)
+#define CSR_UART_RXTX 		MMPTR(0x80000000)
+#define CSR_UART_DIVISOR	MMPTR(0x80000004)
 
 static void early_console_putc (char c)
 {
-	while(CSR_UART_UCR & UART_TXBUSY);
 	CSR_UART_RXTX = c;
+	while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
+	lm32_irq_ack(IRQ_UARTTX);
 }
 
 // write string to console
