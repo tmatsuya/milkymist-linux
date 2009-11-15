@@ -35,7 +35,20 @@
 /* LM32: we always use the first timer in the hardware-description as the system timer */
 extern unsigned int  lm32_core_timer_irq;
 
-#define IRQ_LINUX_TIMER  (lm32_core_timer_irq)
+#define	IRQ_GPIO		(0)
+#define	IRQ_TIMER0		(1)
+#define	IRQ_TIMER1		(2)
+#define	IRQ_UARTRX		(3)
+#define	IRQ_UARTTX		(4)
+#define	IRQ_AC97CRREQUEST	(5)
+#define	IRQ_AC97CRREPLY		(6)
+#define	IRQ_AC97DMAR		(7)
+#define	IRQ_AC97DMAW		(8)
+#define	IRQ_PFPU		(9)
+#define	IRQ_TMU			(10)
+#define	IRQ_PS2			(11)
+
+#define IRQ_SYSTMR	(IRQ_TIMER0)
 
 #include <linux/irq.h>
 
@@ -52,5 +65,6 @@ static inline void ack_bad_irq(int irq)
 void lm32_irq_mask(unsigned int irq);
 void lm32_irq_unmask(unsigned int irq);
 void lm32_irq_ack(unsigned int irq);
+unsigned long lm32_irq_pending(void);
 
 #endif /* _LM32_ASM_IRQ_H_ */

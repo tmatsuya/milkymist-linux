@@ -204,26 +204,6 @@ static inline unsigned long __ipipe_ffnz(unsigned long ul)
 #define __ipipe_syscall_watched_p(p, sc)	\
 	(((p)->flags & PF_EVNOTIFY) || (unsigned long)sc >= NR_syscalls)
 
-//#if defined(CONFIG_BF533)
-//#define IRQ_SYSTMR		IRQ_TMR0
-//#define IRQ_PRIOTMR		CONFIG_TIMER0
-//#define PRIO_GPIODEMUX(irq)	CONFIG_PFA
-//#elif defined(CONFIG_BF537)
-//#define IRQ_SYSTMR		IRQ_TMR0
-//#define IRQ_PRIOTMR		CONFIG_IRQ_TMR0
-//#define PRIO_GPIODEMUX(irq)	CONFIG_IRQ_PROG_INTA
-//#elif defined(CONFIG_BF561)
-//#define IRQ_SYSTMR		IRQ_TIMER0
-//#define IRQ_PRIOTMR		CONFIG_IRQ_TIMER0	
-//#define PRIO_GPIODEMUX(irq)	((irq) == IRQ_PROG0_INTA ? CONFIG_IRQ_PROG0_INTA :  (irq) == IRQ_PROG1_INTA ? CONFIG_IRQ_PROG1_INTA :  CONFIG_IRQ_PROG2_INTA)
-//#define bfin_write_TIMER_DISABLE(val)	bfin_write_TMRS8_DISABLE(val)
-//#define bfin_write_TIMER_ENABLE(val)	bfin_write_TMRS8_ENABLE(val)
-//#define bfin_write_TIMER_STATUS(val)	bfin_write_TMRS8_STATUS(val)
-//#endif
-
-#define IRQ_SYSTMR			IRQ_LINUX_TIMER
-#define IRQ_MASK_SYSTMR	(1 << IRQ_SYSTMR)
-
 #else /* !CONFIG_IPIPE */
 
 #define task_hijacked(p)		0
@@ -234,8 +214,6 @@ static inline unsigned long __ipipe_ffnz(unsigned long ul)
 
 #define ipipe_init_irq_threads()		do { } while(0)
 #define ipipe_start_irq_thread(irq, desc)	0
-
-#define IRQ_SYSTMR		IRQ_LINUX_TIMER
 
 #endif /* !CONFIG_IPIPE */
 

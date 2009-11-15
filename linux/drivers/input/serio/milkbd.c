@@ -32,19 +32,15 @@
 #include <linux/serio.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
+#include <asm/irq.h>
 
 MODULE_AUTHOR("");
 MODULE_DESCRIPTION("Milkymist PS/2 keyboard controller driver");
 MODULE_LICENSE("GPL");
 
 /*
- * IRQs.
- *  */
-#define	PS2_KBD_IRQ  11
-
-/*
- *  * Register numbers.
- *  */
+ * Register numbers.
+ */
 #define	PS2_DATA_REG	0x80007000
 
 static int milkbd_write(struct serio *port, unsigned char val)
@@ -75,23 +71,23 @@ static irqreturn_t milkbd_rx(int irq, void *dev_id)
 static int milkbd_open(struct serio *port)
 {
 
-	if (request_irq(PS2_KBD_IRQ, milkbd_rx, 0, "milkbd", port) != 0) {
+	if (request_irq(IRQ_PS2, milkbd_rx, 0, "milkbd", port) != 0) {
 		printk(KERN_ERR "milkbd.c: Could not allocate keyboard receive IRQ\n");
 		return -EBUSY;
 	}
 
-	lm32_irq_unmask(PS2_KBD_IRQ);
+	lm32_irq_unmask(IRQ_PS2);
 
 	printk(KERN_INFO "milkymist_serio: ps2 port at 0x%08x irq %d\n",
 		PS2_DATA_REG,
-		PS2_KBD_IRQ);
+		IRQ_PS2);
 
 	return 0;
 }
 
 static void milkbd_close(struct serio *port)
 {
-	free_irq(PS2_KBD_IRQ, port);
+	free_irq(IRQ_PS2, port);
 }
 
 /*

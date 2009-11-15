@@ -180,8 +180,8 @@ static struct resource lm32uart_resources[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-		.start = 3,
-		.end = 4,
+		.start = IRQ_UARTRX,
+		.end = IRQ_UARTTX,
 		.flags = IORESOURCE_IRQ,
 	},
 };
@@ -218,8 +218,8 @@ static struct resource lm32milkbd_resources[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-		.start = 11,
-		.end = 11,
+		.start = IRQ_PS2,
+		.end = IRQ_PS2,
 		.flags = IORESOURCE_IRQ,
 	},
 };
