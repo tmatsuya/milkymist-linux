@@ -127,6 +127,18 @@ void lm32_irq_mask_ack(unsigned int irq)
 	local_irq_restore_hw(flags);
 }
 
+unsigned long lm32_irq_pending()
+{
+	unsigned long ret;
+
+	/*
+	 * read interrupt pending register
+	 */
+	asm volatile ("rcsr %0, IP" : "=r"(ret) : );
+
+	return ret;
+}
+
 /*
  * LM32 IRQs implementation
  */
