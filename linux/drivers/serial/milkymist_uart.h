@@ -37,9 +37,9 @@ typedef struct LM32_uart_priv {
 
 /* LM32 UART register layout */
 typedef struct LM32_uart {
-  volatile unsigned int  ucr;
   volatile unsigned int  rxtx;
   volatile unsigned int  div;
+  volatile unsigned int  ucr;
   volatile unsigned int  ier;
 } LM32_uart_t;
 

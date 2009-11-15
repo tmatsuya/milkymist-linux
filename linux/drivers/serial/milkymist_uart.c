@@ -40,16 +40,8 @@
 #include "milkymist_uart.h"
 
 #define MMPTR(x) (*((volatile unsigned int *)(x)))
-#define CSR_UART_UCR		MMPTR(0x80000000)
-#define CSR_UART_RXTX		MMPTR(0x80000004)
-
-#define UART_DR			(0x01)
-#define UART_ERR		(0x02)
-#define UART_BUSY		(0x04)
-
-#define UART_TXBUSY		(0x08)
-#define UART_TXDONE		(0x10)
-#define UART_TXACK		(0x20)
+#define CSR_UART_RXTX		MMPTR(0x80000000)
+#define CSR_UART_DIVISOR	MMPTR(0x80000004)
 
 /* these two will be initialized by lm32uart_init */
 static struct uart_port lm32uart_ports[1];
@@ -111,7 +103,6 @@ static void lm32uart_tx_next_char(struct uart_port* port, LM32_uart_t* uart)
 	/* interrupt already cleared */
 	struct circ_buf *xmit = &(port->info->xmit);
 
-	uart->ucr = LM32_UART_TX_ACK;
 	if (port->x_char) {
 		/* send xon/xoff character */
 		uart->rxtx = port->x_char;
@@ -143,50 +134,20 @@ static void lm32uart_rx_next_char(struct uart_port* port, LM32_uart_t* uart)
 {
 	struct tty_struct *tty = port->info->tty;
 	unsigned long ch;
-	unsigned long ucr;
+	unsigned long ucr = 0;
 	unsigned int flg;
 
-	ucr = uart->ucr;
-	while( ucr & LM32_UART_RX_AVAILABLE ) {
-		ch = uart->rxtx & 0xFF;
-		uart->ucr = LM32_UART_RX_ACK;
-		port->icount.rx++;
+	ch = uart->rxtx & 0xFF;
+	port->icount.rx++;
 
-		flg = TTY_NORMAL;
+	flg = TTY_NORMAL;
 
-		if( ucr & (LM32_UART_LSR_BI | LM32_UART_LSR_PE | LM32_UART_LSR_OE | LM32_UART_LSR_FE) ) {
-			/* handle errors here, but don't let them delay us in normal processing */
-			if( ucr & LM32_UART_LSR_BI ) {
-				port->icount.brk++;
-				if (uart_handle_break(port))
-					goto ignore_char;
-				ucr &= ~(LM32_UART_LSR_PE | LM32_UART_LSR_FE);
-			}
-			if( ucr & LM32_UART_LSR_PE )
-				port->icount.parity++;
-			if( ucr & LM32_UART_LSR_OE )
-				port->icount.overrun++;
-			if( ucr & LM32_UART_LSR_FE )
-				port->icount.frame++;
+	if (uart_handle_sysrq_char(port, ch))
+		goto ignore_char;
 
-			ucr &= port->read_status_mask;
+	uart_insert_char(port, ucr, LM32_UART_LSR_OE, ch, flg);
 
-			if( ucr & LM32_UART_LSR_BI )
-				flg = TTY_BREAK;
-			else if (ucr & LM32_UART_LSR_PE)
-				flg = TTY_PARITY;
-			else if (ucr & LM32_UART_LSR_FE)
-				flg = TTY_FRAME;
-		}
-
-		if (uart_handle_sysrq_char(port, ch))
-			goto ignore_char;
-
-		uart_insert_char(port, ucr, LM32_UART_LSR_OE, ch, flg);
-
-	ignore_char:
-		ucr = uart->ucr;
-	}
+ignore_char:
 
 	tty_flip_buffer_push(tty);
 }
@@ -196,9 +157,6 @@ static irqreturn_t lm32uart_irq_rx(int irq, void* portarg)
 	struct uart_port* port = (struct uart_port*)portarg;
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	irqreturn_t ret = IRQ_NONE;
-
-	/* get interrupt source */
-	unsigned long intr_src;
 
 	/* data ready in buffer -> receive character */
 	lm32uart_rx_next_char(port, uart);
@@ -210,9 +168,6 @@ static irqreturn_t lm32uart_irq_tx(int irq, void* portarg)
 	struct uart_port* port = (struct uart_port*)portarg;
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 	irqreturn_t ret = IRQ_NONE;
-
-	/* get interrupt source */
-	unsigned long intr_src;
 
 	/* transmit register empty -> can send next byte */
 	lm32uart_tx_next_char(port, uart);
@@ -388,7 +343,7 @@ static int lm32uart_verify_port(struct uart_port *port, struct serial_struct *se
 #ifdef CONFIG_SERIAL_MILKYMIST_CONSOLE
 static void lm32_console_putchar(struct uart_port *port, int ch)
 {
-	while(CSR_UART_UCR & UART_TXBUSY)
+	while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
 		barrier();
 	CSR_UART_RXTX = ch;
 }
