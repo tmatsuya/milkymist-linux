@@ -241,14 +241,18 @@ static int lm32uart_startup(struct uart_port *port)
 		printk(KERN_NOTICE "Unable to attach Milkymist UART RX interrupt\n");
 		return -EBUSY;
 	}
+#if 0
 	if( request_irq(port->irq+1, lm32uart_irq_tx,
 				IRQF_DISABLED, "milkymist_uart TX", port) ) {
 		printk(KERN_NOTICE "Unable to attach Milkymist UART TX interrupt\n");
 		return -EBUSY;
 	}
+#endif
 
 	lm32_irq_unmask(port->irq);
+#if 0
 	lm32_irq_unmask(port->irq+1);
+#endif
 
 	return 0;
 }
@@ -343,9 +347,9 @@ static int lm32uart_verify_port(struct uart_port *port, struct serial_struct *se
 #ifdef CONFIG_SERIAL_MILKYMIST_CONSOLE
 static void lm32_console_putchar(struct uart_port *port, int ch)
 {
-	while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
-		barrier();
 	CSR_UART_RXTX = ch;
+	while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
+	lm32_irq_ack(IRQ_UARTTX);
 }
 
 /*
@@ -498,8 +502,8 @@ static int __devinit lm32uart_serial_probe(struct platform_device *pdev)
 
 	ret = uart_add_one_port(&lm32uart_driver, port);
 	if (!ret) {
-		pr_info("milkymist_uart: added port %d with irq %d-%d at 0x%lx\n",
-				port->line, port->irq, port->irq+1, (unsigned long)port->membase);
+		pr_info("milkymist_uart: added port %d with irq %d at 0x%lx\n",
+				port->line, port->irq, (unsigned long)port->membase);
 		device_init_wakeup(&pdev->dev, 1);
 		platform_set_drvdata(pdev, port);
 	} else
