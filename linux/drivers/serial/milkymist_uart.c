@@ -160,6 +160,7 @@ static irqreturn_t lm32uart_irq_rx(int irq, void* portarg)
 
 	/* data ready in buffer -> receive character */
 	lm32uart_rx_next_char(port, uart);
+	CSR_UART_RXTX = 0;
 	return IRQ_HANDLED;
 }
 
@@ -178,10 +179,7 @@ static unsigned int lm32uart_tx_empty(struct uart_port *port)
 {
 	LM32_uart_t* uart = (LM32_uart_t*)port->membase;
 
-	if( uart->ucr & LM32_UART_TX_BUSY )
-		return 0;
-	else
-		return TIOCSER_TEMT;
+	return TIOCSER_TEMT;
 }
 
 static void lm32uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
@@ -241,18 +239,14 @@ static int lm32uart_startup(struct uart_port *port)
 		printk(KERN_NOTICE "Unable to attach Milkymist UART RX interrupt\n");
 		return -EBUSY;
 	}
-#if 0
 	if( request_irq(port->irq+1, lm32uart_irq_tx,
 				IRQF_DISABLED, "milkymist_uart TX", port) ) {
 		printk(KERN_NOTICE "Unable to attach Milkymist UART TX interrupt\n");
 		return -EBUSY;
 	}
-#endif
 
 	lm32_irq_unmask(port->irq);
-#if 0
 	lm32_irq_unmask(port->irq+1);
-#endif
 
 	return 0;
 }
@@ -480,7 +474,7 @@ static struct uart_port* __devinit lm32uart_init_port(struct platform_device *pd
 	port->type = PORT_LM32UART;
 	port->iobase = (void __iomem*)0;;
 	port->membase = (void __iomem*)0x80000000;
-	port->irq = 3;
+	port->irq = IRQ_UARTRX;
 	port->uartclk = cpu_frequency * 16;
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
 	port->iotype = UPIO_PORT; // TODO perhaps this is not completely correct
@@ -502,8 +496,8 @@ static int __devinit lm32uart_serial_probe(struct platform_device *pdev)
 
 	ret = uart_add_one_port(&lm32uart_driver, port);
 	if (!ret) {
-		pr_info("milkymist_uart: added port %d with irq %d at 0x%lx\n",
-				port->line, port->irq, (unsigned long)port->membase);
+		pr_info("milkymist_uart: added port %d with irq %d-%d at 0x%lx\n",
+				port->line, port->irq, port->irq+1, (unsigned long)port->membase);
 		device_init_wakeup(&pdev->dev, 1);
 		platform_set_drvdata(pdev, port);
 	} else
