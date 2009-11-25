@@ -1899,8 +1899,6 @@ context_switch(struct rq *rq, struct task_struct *prev,
 
 	barrier();
 
-	if (task_hijacked(prev))
-		return 1;
 	/*
 	 * this_rq must be evaluated again because prev may have moved
 	 * CPUs since it called schedule(), thus the 'rq' on its stack

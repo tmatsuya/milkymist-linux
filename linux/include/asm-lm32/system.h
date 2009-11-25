@@ -80,10 +80,8 @@ extern asmlinkage struct task_struct* resume(struct task_struct* last, struct ta
 
 #define switch_to(prev,next,last)				\
 do {								\
-	local_irq_disable_hw_cond(); \
   lm32_current_thread = task_thread_info(next);  	\
   last = resume(prev, next);	\
-	local_irq_enable_hw_cond(); \
 } while (0)
 
 #define nop()  asm volatile ("nop"::)
