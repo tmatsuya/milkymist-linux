@@ -14,7 +14,6 @@
 #include <linux/compiler.h>
 #include <linux/bitops.h>
 #include <linux/log2.h>
-#include <linux/ipipe_base.h>
 #include <asm/byteorder.h>
 #include <asm/bug.h>
 
@@ -86,11 +85,10 @@ struct user;
 #ifdef CONFIG_PREEMPT_VOLUNTARY
 extern int cond_resched(void);
 # define might_resched() do { \
-		ipipe_check_context(ipipe_root_domain); \
 		cond_resched(); \
 	} while (0)
 #else
-# define might_resched() ipipe_check_context(ipipe_root_domain)
+# define might_resched() do { } while (0)
 #endif
 
 #ifdef CONFIG_DEBUG_SPINLOCK_SLEEP

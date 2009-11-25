@@ -71,8 +71,6 @@ config HEADERS_CHECK
 	  exported to $(INSTALL_HDR_PATH) (usually 'usr/include' in
 	  your build tree), to make sure they're suitable.
 
-source "kernel/ipipe/Kconfig.debug"
-
 config DEBUG_KERNEL
 	bool "Kernel debugging"
 	help

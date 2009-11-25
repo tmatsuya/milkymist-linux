@@ -54,10 +54,6 @@ void lm32_irq_mask(unsigned int irq)
 
 	local_irq_save_hw(flags);
 
-#ifdef CONFIG_IPIPE
-	ipipe_irq_lock(irq);
-#endif
-
 	mask &= lm32_current_irq_mask;
 	lm32_current_irq_mask = mask;
 
@@ -84,10 +80,6 @@ void lm32_irq_unmask(unsigned int irq)
 		 * set mask
 		 */
 		asm volatile ("wcsr IM, %0" : : "r"(mask));
-
-#ifdef CONFIG_IPIPE
-		ipipe_irq_unlock(irq);
-#endif
 
 		local_irq_restore_hw(flags);
 	}
@@ -163,21 +155,8 @@ void __init init_IRQ(void)
 
 	for (irq = 0; irq < NR_IRQS; irq++) {
 		set_irq_chip(irq, &lm32_internal_irq_chip);
-#ifdef CONFIG_IPIPE
-		/* mask irq upon entry */
-		set_irq_handler(irq, handle_level_irq);
-#else
 		set_irq_handler(irq, handle_simple_irq);
-#endif
 	}
-
-#ifdef CONFIG_IPIPE
-	 for (irq = 0; irq < NR_IRQS; irq++) {
-		 struct irq_desc *desc = irq_desc + irq;
-		 desc->ic_prio = 0;
-		 desc->thr_prio = 0;
-	 }
-#endif /* CONFIG_IPIPE */
 }
 
 int show_interrupts(struct seq_file *p, void *v)
@@ -230,7 +209,6 @@ asmlinkage void asm_do_IRQ(unsigned long vec, struct pt_regs *regs)
 
 	irq_enter();
 
-#ifndef CONFIG_IPIPE
 	/* decode irq */
 	for (irq=0 ; irq<32; ++irq ) {
 		if ( vec & (1 << irq) ) {
@@ -239,7 +217,6 @@ asmlinkage void asm_do_IRQ(unsigned long vec, struct pt_regs *regs)
 			generic_handle_irq(irq);
 		}
 	}
-#endif
 
 	irq_exit();
 
@@ -247,69 +224,3 @@ asmlinkage void asm_do_IRQ(unsigned long vec, struct pt_regs *regs)
 
 	manage_signals_irq(regs);
 }
-
-#ifdef CONFIG_IPIPE
-asmlinkage unsigned long __ipipe_grab_irq(int vec, struct pt_regs *regs)
-{
-	int ret = 0;
-
-#if 0
-	// show vec
-	volatile unsigned long* ledbase = (volatile unsigned long*)lm32tag_leds[0]->addr; 
-	*ledbase = ~( (vec & 0xFF) | ((vec & 0xFF0000) >> 16) );
-	/* show lowest 8 irqs + irq 20 at position of irq 5 */
-#endif
-
-#if 0
-	// count up to show interrupt activity
-	volatile unsigned long* segbase = (volatile unsigned long*)lm32tag_7seg[0]->addr; 
-	*segbase = 0x200 | ((*segbase + 1) & 0xFF);
-#endif
-
-	/* fastpath for system timer */
-	/* only do system timer if it is not masked!
-	 * if it is masked it cannot have caused this interrupt! */
-	if( likely(
-				(vec == IRQ_MASK_SYSTMR) &&
-				(lm32_current_irq_mask & IRQ_MASK_SYSTMR)) ) {
-		goto handle_tmr_irq;
-	}
-
-	{
-		unsigned int irq = 0;
-		unsigned long mask = 1;
-		do {
-			/* decode irq */
-			while( (vec & mask & lm32_current_irq_mask) == 0 && (mask != 0) ) {
-				irq++;
-				mask = mask + mask;
-			}
-
-			if( mask ) {
-				ipipe_trace_irq_entry(irq); 
-				__ipipe_handle_irq(irq, regs);
-				local_irq_disable_hw();
-				ipipe_trace_irq_exit(irq);
-
-				/* prepare for next iteration */
-				irq++;
-				mask = mask + mask;
-			}
-		} while( mask );
-	}
-
-	goto out;
-
-handle_tmr_irq:
-	ipipe_trace_irq_entry(IRQ_SYSTMR); 
-	__ipipe_handle_irq(IRQ_SYSTMR, regs);
-	ipipe_trace_irq_exit(IRQ_SYSTMR);
-
-out:
-	if (ipipe_root_domain_p)
-		ret = !test_bit(IPIPE_STALL_FLAG, &ipipe_root_cpudom_var(status));
-
-	/* TODO LM32 do something with return value */
-	return ret;
-}
-#endif

@@ -28,110 +28,6 @@
 
 #ifndef __ASSEMBLY__
 
-#ifdef CONFIG_IPIPE
-
-#include <linux/ipipe_trace.h>
-
-static __inline__ unsigned long __ipipe_test_and_stall_root(void);
-
-void __ipipe_unstall_root(void);
-
-void __ipipe_restore_root(unsigned long flags);
-
-#define __all_masked_irq_flags 0x1
-#define irqs_enabled_from_flags_hw(x)	((x) & __all_masked_irq_flags)
-#define raw_irqs_disabled_flags(flags)	(!irqs_enabled_from_flags_hw(flags))
-#define local_test_iflag_hw(x)		irqs_enabled_from_flags_hw(x)
-
-#define local_save_flags(x)						\
-	do {								\
-		(x) = __ipipe_test_root(); \
-	} while(0)
-
-#define local_irq_save(x)				\
-	do {						\
-		(x) = __ipipe_test_and_stall_root();	\
-	} while(0)
-
-#define local_irq_restore(x) \
-	__ipipe_restore_root(x)
-
-#define local_irq_disable()	\
-	do { \
-		ipipe_check_context(ipipe_root_domain); \
-		__ipipe_stall_root(); \
-	} while(0)
-
-#define local_irq_enable() \
-	__ipipe_unstall_root()
-
-#define irqs_disabled() \
-	__ipipe_test_root()
-
-#define local_save_flags_hw(x) \
-	asm volatile ("rcsr %0, IE\n" : "=r"(x))
-
-#define	irqs_disabled_hw()				\
-	({						\
-		unsigned long flags;			\
-		local_save_flags_hw(flags);		\
-		!irqs_enabled_from_flags_hw(flags);	\
-	})
-
-static inline unsigned long raw_mangle_irq_bits(int virt, unsigned long real)
-{
-	/* Merge virtual and real interrupt mask bits into a single
-	   32bit word. */
-	return (real & ~(1 << 31)) | ((virt != 0) << 31);
-}
-
-static inline int raw_demangle_irq_bits(unsigned long *x)
-{
-	int virt = (*x & (1 << 31)) != 0;
-	*x &= ~(1L << 31);
-	return virt;
-}
-
-/* TODO LM32 IPIPE_TRACE_IRQSOFF */
-
-static inline void local_irq_enable_hw(void)
-{
-	unsigned int ie;
-	asm volatile (
-		"rcsr %0, IE\n" 
-		"ori %0, %0, 1\n"
-		"wcsr IE, %0\n"
-		: "=r"(ie));
-}
-
-static unsigned int local_irq_disable_hw(void)
-{
-	unsigned int old_ie, new_ie;
-	asm volatile (
-		"mvi %0,0xfffffffe\n" \
-		"rcsr %1, IE\n" \
-		"and %0, %1, %0\n" \
-		"wcsr IE, %0\n" \
-		"andi %1, %1, 1\n" \
-		: "=r"(new_ie), "=r"(old_ie) \
-	);
-	return old_ie;
-}
-
-#define local_irq_save_hw(x) { x = local_irq_disable_hw(); }
-
-#define local_irq_restore_hw(x) do {			\
-		if (irqs_enabled_from_flags_hw(x))	\
-			local_irq_enable_hw();		\
-	} while (0)
-
-#define local_irq_disable_hw_notrace()	local_irq_disable_hw()
-#define local_irq_enable_hw_notrace()	local_irq_enable_hw()
-#define local_irq_save_hw_notrace(x)	local_irq_save_hw(x)
-#define local_irq_restore_hw_notrace(x)	local_irq_restore_hw(x)
-
-#else /* !CONFIG_IPIPE */
-
 static inline int local_irq_disable(void)
 {
 	unsigned int old_ie, new_ie;
@@ -179,8 +75,6 @@ static inline int irqs_disabled(void)
 #define local_irq_enable_hw()		local_irq_enable()
 #define local_irq_disable_hw()		local_irq_disable()
 #define irqs_disabled_hw()		irqs_disabled()
-
-#endif /* !CONFIG_IPIPE */
 
 extern asmlinkage struct task_struct* resume(struct task_struct* last, struct task_struct* next);
 

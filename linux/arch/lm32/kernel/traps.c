@@ -175,9 +175,6 @@ asmlinkage unsigned long asm_do_sig(unsigned long vec, struct pt_regs *regs)
 			break;
 	}
 
- 	if (ipipe_trap_notify(trapidx, regs))
- 		return regs->r1;
-
 	memset(&info, 0, sizeof(info));
 	info.si_signo = sig;
 	info.si_addr = (void*)addr;

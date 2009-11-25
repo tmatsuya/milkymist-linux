@@ -13,9 +13,6 @@ unsigned int debug_smp_processor_id(void)
 	int this_cpu = raw_smp_processor_id();
 	cpumask_t this_mask;
 
-	if (!ipipe_root_domain_p)
-		goto out;
-
 	if (likely(preempt_count))
 		goto out;
 

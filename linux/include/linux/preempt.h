@@ -9,7 +9,6 @@
 #include <linux/thread_info.h>
 #include <linux/linkage.h>
 #include <linux/list.h>
-#include <linux/ipipe_base.h>
 
 #ifdef CONFIG_DEBUG_PREEMPT
   extern void fastcall add_preempt_count(int val);
@@ -30,21 +29,18 @@ asmlinkage void preempt_schedule(void);
 
 #define preempt_disable() \
 do { \
-	ipipe_check_context(ipipe_root_domain); \
 	inc_preempt_count(); \
 	barrier(); \
 } while (0)
 
 #define preempt_enable_no_resched() \
 do { \
-	ipipe_check_context(ipipe_root_domain); \
 	barrier(); \
 	dec_preempt_count(); \
 } while (0)
 
 #define preempt_check_resched() \
 do { \
-	ipipe_check_context(ipipe_root_domain); \
 	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
 		preempt_schedule(); \
 } while (0)
@@ -58,10 +54,10 @@ do { \
 
 #else
 
-#define preempt_disable()		ipipe_check_context(ipipe_root_domain)
-#define preempt_enable_no_resched()	ipipe_check_context(ipipe_root_domain)
-#define preempt_enable()		ipipe_check_context(ipipe_root_domain)
-#define preempt_check_resched()		ipipe_check_context(ipipe_root_domain)
+#define preempt_disable() do { } while (0)
+#define preempt_enable_no_resched() do { } while (0)
+#define preempt_enable() do { } while (0)
+#define preempt_check_resched() do { } while (0)
 
 #endif
 

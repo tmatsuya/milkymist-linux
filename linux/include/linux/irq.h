@@ -151,18 +151,6 @@ struct irq_chip {
  * @name:		flow handler name for /proc/interrupts output
  */
 struct irq_desc {
-#ifdef CONFIG_IPIPE
-	void			fastcall (*ipipe_ack)(unsigned int irq,
-						      struct irq_desc *desc);
-	void			fastcall (*ipipe_demux)(unsigned int irq,
-							struct irq_desc *desc);
-	void			fastcall (*ipipe_end)(unsigned int irq,
-						      struct irq_desc *desc);
-	struct task_struct      *thread;
-	void                    (*thr_handler)(unsigned irq, void *);
-	int                     thr_prio;
-	int                     ic_prio;
-#endif /* CONFIG_IPIPE */
 	irq_flow_handler_t	handle_irq;
 	struct irq_chip		*chip;
 	struct msi_desc		*msi_desc;
@@ -372,14 +360,6 @@ set_irq_chained_handler(unsigned int irq,
 {
 	__set_irq_handler(irq, handle, 1, NULL);
 }
-
-#ifdef CONFIG_IPIPE
-extern void
-__set_irq_demux_handler(unsigned int irq,
-			void fastcall (*decode)(unsigned int, struct irq_desc *),
-			int is_chained,
-			const char *name);
-#endif /* CONFIG_IPIPE */
 
 /* Handle dynamic irq creation and destruction */
 extern int create_irq(void);

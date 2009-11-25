@@ -91,10 +91,6 @@ config APM_EMULATION
 	bool
 	default n
 
-config IPIPE_TRACE_MCOUNTS
-	bool
-	default n
-
 source "init/Kconfig"
 
 source "arch/lm32/Kconfig.cpu"

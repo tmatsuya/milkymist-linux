@@ -493,21 +493,6 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
 	 * in the parent and the child
 	 */
 	if (is_cow_mapping(vm_flags)) {
-#ifdef CONFIG_IPIPE
-		if (uncow_page) {
-			struct page *old_page = vm_normal_page(vma, addr, pte);
-			cow_user_page(uncow_page, old_page, addr, vma);
-			pte = mk_pte(uncow_page, vma->vm_page_prot);
-			
-			if (vm_flags & VM_SHARED)
-				pte = pte_mkclean(pte);
-			pte = pte_mkold(pte);
-
-			page_dup_rmap(uncow_page, vma, addr);
-			rss[!!PageAnon(uncow_page)]++;
-			goto out_set_pte;
-		}
-#endif /* CONFIG_IPIPE */
 		ptep_set_wrprotect(src_mm, addr, src_pte);
 		pte = pte_wrprotect(pte);
 	}
@@ -540,18 +525,7 @@ static int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
 	int progress = 0;
 	struct page *uncow_page = NULL;
 	int rss[2];
-#ifdef CONFIG_IPIPE
-	int do_cow_break = 0;
 again:
-	if (do_cow_break) {
-		uncow_page = alloc_page_vma(GFP_HIGHUSER, vma, addr);
-		if (!uncow_page)
-			return -ENOMEM;
-		do_cow_break = 0;
-	}
-#else
-again:
-#endif
 	rss[1] = rss[0] = 0;
 	dst_pte = pte_alloc_map_lock(dst_mm, dst_pmd, addr, &dst_ptl);
 	if (!dst_pte) {
@@ -580,17 +554,6 @@ again:
 			progress++;
 			continue;
 		}
-#ifdef CONFIG_IPIPE
-		if (likely(uncow_page == NULL) && likely(pte_present(*src_pte))) {
-			if (is_cow_mapping(vma->vm_flags)) {
-				if (((vma->vm_flags|src_mm->def_flags) & (VM_LOCKED|VM_PINNED))
-				    == (VM_LOCKED|VM_PINNED)) {
-					do_cow_break = 1;
-					break;
-				}
-			}
-		}
-#endif
 		copy_one_pte(dst_mm, src_mm, dst_pte,
 			     src_pte, vma, addr, rss, uncow_page);
 		uncow_page = NULL;
@@ -2910,104 +2873,3 @@ int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, in
 	return buf - old_buf;
 }
 EXPORT_SYMBOL_GPL(access_process_vm);
-
-#ifdef CONFIG_IPIPE
-
-static inline int ipipe_pin_pte_range(struct mm_struct *mm, pmd_t *pmd,
-				      struct vm_area_struct *vma,
-				      unsigned long addr, unsigned long end)
-{
-	spinlock_t *ptl;
-	pte_t *pte;
-	
-	do {
-		pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-		if (!pte)
-			continue;
-
-		if (!pte_present(*pte)) {
-			pte_unmap_unlock(pte, ptl);
-			continue;
-		}
-
-		if (do_wp_page(mm, vma, addr, pte, pmd, ptl, *pte) == VM_FAULT_OOM)
-			return -ENOMEM;
-	} while (addr += PAGE_SIZE, addr != end);
-	return 0;
-}
-
-static inline int ipipe_pin_pmd_range(struct mm_struct *mm, pud_t *pud,
-				      struct vm_area_struct *vma,
-				      unsigned long addr, unsigned long end)
-{
-	unsigned long next;
-	pmd_t *pmd;
-
-	pmd = pmd_offset(pud, addr);
-	do {
-		next = pmd_addr_end(addr, end);
-		if (ipipe_pin_pte_range(mm, pmd, vma, addr, end))
-			return -ENOMEM;
-	} while (pmd++, addr = next, addr != end);
-	return 0;
-}
-
-static inline int ipipe_pin_pud_range(struct mm_struct *mm, pgd_t *pgd,
-				      struct vm_area_struct *vma,
-				      unsigned long addr, unsigned long end)
-{
-	unsigned long next;
-	pud_t *pud;
-
-	pud = pud_offset(pgd, addr);
-	do {
-		next = pud_addr_end(addr, end);
-		if (ipipe_pin_pmd_range(mm, pud, vma, addr, end))
-			return -ENOMEM;
-	} while (pud++, addr = next, addr != end);
-	return 0;
-}
-
-int ipipe_disable_ondemand_mappings(struct task_struct *tsk)
-{
-	unsigned long addr, next, end;
-	struct vm_area_struct *vma;
-	struct mm_struct *mm;
-	int result = 0;
-	pgd_t *pgd;
-
-	mm = get_task_mm(tsk);
-	if (!mm)
-		return -EPERM;
-
-	down_write(&mm->mmap_sem);
-	if (mm->def_flags & VM_PINNED)
-		goto done_mm;
-
-	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-		if (!is_cow_mapping(vma->vm_flags))
-			continue;
-
-		addr = vma->vm_start;
-		end = vma->vm_end;
-		
-		pgd = pgd_offset(mm, addr);
-		do {
-			next = pgd_addr_end(addr, end);
-			if (ipipe_pin_pud_range(mm, pgd, vma, addr, next)) {
-				result = -ENOMEM;
-				goto done_mm;
-			}
-		} while (pgd++, addr = next, addr != end);
-	}
-	mm->def_flags |= VM_PINNED;
-
-  done_mm:
-	up_write(&mm->mmap_sem);
-	mmput(mm);
-	return result;
-}
-
-EXPORT_SYMBOL(ipipe_disable_ondemand_mappings);
-
-#endif

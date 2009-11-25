@@ -82,10 +82,7 @@ void lm32_systimer_ack(void)
  */
 static irqreturn_t timer_interrupt(int irq, void *arg)
 {
-#ifdef CONFIG_IPIPE
-	if( !__ipipe_mach_timerstolen )
-#endif
-		lm32_systimer_ack();
+	lm32_systimer_ack();
 	write_seqlock(&xtime_lock);
 
 	do_timer(1);

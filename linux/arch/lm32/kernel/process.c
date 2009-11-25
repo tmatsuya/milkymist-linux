@@ -67,9 +67,7 @@ EXPORT_SYMBOL(pm_power_off);
  */
 static void default_idle(void)
 {
- 	while(!need_resched()) {
-		ipipe_suspend_domain();
-	}
+ 	while(!need_resched());
 }
 
 void (*idle)(void) = default_idle;

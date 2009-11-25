@@ -85,11 +85,7 @@ ENTRY(interrupt_handler)
 	rcsr    r1, IP
 
 	addi    r2, sp, 4
-#ifdef CONFIG_IPIPE
-	calli		__ipipe_grab_irq
-#else
 	calli   asm_do_IRQ
-#endif
 	bi      _restore_irq_frame_and_return
 	nop
 
@@ -140,31 +136,6 @@ ENTRY(system_call)
 	addi  sp, sp, -128
 	sw    (sp + 120), ra
 	calli _save_syscall_frame
-
-#ifdef CONFIG_IPIPE
-	/* pass regs as r1 */
-	addi	r1, sp, 4
-	calli __ipipe_syscall_root
-	/* returns in r1 */
-	/* 0 -- if the syscall is to be passed to Linux */
-	/* 1 -- if the syscall should not be passed to Linux, and no */
-	/* tail work should be performed */
-	/* -1 -- if the syscall should not be passed to Linux but the */
-	/* tail work has to be performed (for handling signals etc). */
-	bg	r1, r0, _restore_and_return_exception			/* if r1 > 0 -> fastExit */
-	bg	r0, r1, .syscallTail	/* if 0 > r1 -> syscallTail */
-	/* else pass to linux -> restore caller saved registers */
-	lw	r1, (sp+8)
-	lw	r2, (sp+12)
-	lw	r3, (sp+16)
-	lw	r4, (sp+20)
-	lw	r5, (sp+24)
-	lw	r6, (sp+28)
-	lw	r8, (sp+36)
-	lw	r9, (sp+40)
-	lw	r10, (sp+44)
-	lw	ra, (sp+120)
-#endif /* CONFIG_IPIPE */
 
 	/* r7 always holds the pointer to struct pt_regs */
 	addi  r7, sp, 4

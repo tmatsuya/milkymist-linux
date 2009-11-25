@@ -31,10 +31,6 @@ typedef struct {
 #endif
 } spinlock_t;
 
-typedef struct {
-	raw_spinlock_t __raw_lock;
-} __ipipe_spinlock_t;
-
 #define SPINLOCK_MAGIC		0xdead4ead
 
 typedef struct {
@@ -96,21 +92,9 @@ typedef struct {
  * __SPIN_LOCK_UNLOCKED()/__RW_LOCK_UNLOCKED() as appropriate.
  */
 #define SPIN_LOCK_UNLOCKED	__SPIN_LOCK_UNLOCKED(old_style_spin_init)
-#define IPIPE_SPIN_LOCK_UNLOCKED					\
-	(__ipipe_spinlock_t) {	.__raw_lock = __RAW_SPIN_LOCK_UNLOCKED }
 #define RW_LOCK_UNLOCKED	__RW_LOCK_UNLOCKED(old_style_rw_init)
 
 #define DEFINE_SPINLOCK(x)	spinlock_t x = __SPIN_LOCK_UNLOCKED(x)
 #define DEFINE_RWLOCK(x)	rwlock_t x = __RW_LOCK_UNLOCKED(x)
-
-#ifdef CONFIG_IPIPE
-# define ipipe_spinlock_t		__ipipe_spinlock_t
-# define IPIPE_DEFINE_SPINLOCK(x)	ipipe_spinlock_t x = IPIPE_SPIN_LOCK_UNLOCKED
-# define IPIPE_DECLARE_SPINLOCK(x)	extern ipipe_spinlock_t x
-#else
-# define ipipe_spinlock_t		spinlock_t
-# define IPIPE_DEFINE_SPINLOCK(x)	DEFINE_SPINLOCK(x)
-# define IPIPE_DECLARE_SPINLOCK(x)	extern spinlock_t x
-#endif
 
 #endif /* __LINUX_SPINLOCK_TYPES_H */
