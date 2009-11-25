@@ -75,5 +75,3 @@ quiet_cmd_ikconfiggz = IKCFG   $@
 targets += config_data.h
 $(obj)/config_data.h: $(obj)/config_data.gz FORCE
 	$(call if_changed,ikconfiggz)
-
-obj-$(CONFIG_XENOMAI) += xenomai/

@@ -49,6 +49,3 @@ vmlinux.bin: vmlinux
 
 vmlinux.gz: vmlinux.bin
 	cat $< |gzip >$@
-
-
-drivers-$(CONFIG_XENOMAI) += arch/lm32/xenomai/
