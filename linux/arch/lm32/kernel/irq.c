@@ -52,7 +52,7 @@ void lm32_irq_mask(unsigned int irq)
 	unsigned long flags;
 	unsigned long mask = ~(1 << irq);
 
-	local_irq_save_hw(flags);
+	local_irq_save(flags);
 
 	mask &= lm32_current_irq_mask;
 	lm32_current_irq_mask = mask;
@@ -62,7 +62,7 @@ void lm32_irq_mask(unsigned int irq)
 	 */
 	asm volatile ("wcsr IM, %0" : : "r"(mask));
 
-	local_irq_restore_hw(flags);
+	local_irq_restore(flags);
 }
 
 void lm32_irq_unmask(unsigned int irq)
@@ -71,7 +71,7 @@ void lm32_irq_unmask(unsigned int irq)
 	unsigned long mask = (1 << irq);
 
 	if( !(lm32_current_irq_mask & mask) ) {
-		local_irq_save_hw(flags);
+		local_irq_save(flags);
 
 		mask |= lm32_current_irq_mask;
 		lm32_current_irq_mask = mask;
@@ -81,7 +81,7 @@ void lm32_irq_unmask(unsigned int irq)
 		 */
 		asm volatile ("wcsr IM, %0" : : "r"(mask));
 
-		local_irq_restore_hw(flags);
+		local_irq_restore(flags);
 	}
 }
 
@@ -101,7 +101,7 @@ void lm32_irq_mask_ack(unsigned int irq)
 	unsigned long mask = ~(1 << irq);
 	unsigned long ack = 1 << irq;
 
-	local_irq_save_hw(flags);
+	local_irq_save(flags);
 
 	mask &= lm32_current_irq_mask;
 	lm32_current_irq_mask = mask;
@@ -116,7 +116,7 @@ void lm32_irq_mask_ack(unsigned int irq)
 	 */
 	asm volatile ("wcsr IP, %0" : : "r"(ack));
 
-	local_irq_restore_hw(flags);
+	local_irq_restore(flags);
 }
 
 unsigned long lm32_irq_pending()

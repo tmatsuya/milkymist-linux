@@ -524,7 +524,7 @@ asmlinkage void __init start_kernel(void)
 	unwind_init();
 	lockdep_init();
 
-	local_irq_disable_hw();
+	local_irq_disable();
 	early_boot_irqs_off();
 	early_init_irq_lock_class();
 
@@ -577,10 +577,6 @@ asmlinkage void __init start_kernel(void)
 	softirq_init();
 	timekeeping_init();
 	time_init();
-	/*
-	 * We need to wait for the interrupt and time subsystems to be
-	 * initialized before enabling the pipeline.
-	 */
 	profile_init();
 	if (!irqs_disabled())
 		printk("start_kernel(): bug: interrupts were enabled early\n");

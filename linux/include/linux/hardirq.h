@@ -146,7 +146,7 @@ extern void irq_enter(void);
  */
 extern void irq_exit(void);
 
-#define nmi_enter()		do { } while (0)
-#define nmi_exit()		do { } while (0)
+#define nmi_enter()		do { lockdep_off(); __irq_enter(); } while (0)
+#define nmi_exit()		do { __irq_exit(); lockdep_on(); } while (0)
 
 #endif /* LINUX_HARDIRQ_H */

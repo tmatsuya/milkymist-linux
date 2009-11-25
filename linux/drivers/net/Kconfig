@@ -1955,12 +1955,6 @@ config NE_H8300
 	  Say Y here if you want to use the NE2000 compatible
 	  controller on the Renesas H8/300 processor.
 
-config LM32_TRISPEEDMAC
-	bool "Lattice Mico32 Tri-Speed Ethernet MAC"
-	depends on LM32 && NET_ETHERNET
-	help
-		TODO: write the help for the lattice Mico32 ethernet mac
-
 source "drivers/net/fec_8xx/Kconfig"
 source "drivers/net/fs_enet/Kconfig"
 

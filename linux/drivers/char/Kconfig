@@ -928,13 +928,6 @@ config MWAVE
 	  To compile this driver as a module, choose M here: the
 	  module will be called mwave.
 
-config LM32_GPIO
-	tristate "Lattice Mico32 GPIO Support"
-	depends on LM32
-	help
-	  Give userspace access to the GPIO pins on the
-		Lattice Mico32 processor.
-
 config SCx200_GPIO
 	tristate "NatSemi SCx200 GPIO Support"
 	depends on SCx200
@@ -980,13 +973,6 @@ config CS5535_GPIO
 config GPIO_VR41XX
 	tristate "NEC VR4100 series General-purpose I/O Unit support"
 	depends on CPU_VR41XX
-
-config ECP250_7SEG
-	tristate "Lattice Mico32 7 Segment Display Support on ECP250"
-	depends on LM32 && BOARD_ECP250
-	help
-	  Give userspace access to the 7 Segment Display on the
-		Lattice Mico32 processor eval board ECP250.
 
 config RAW_DRIVER
 	tristate "RAW driver (/dev/raw/rawN)"

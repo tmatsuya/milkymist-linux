@@ -33,27 +33,6 @@ enum export {
 	export_unused_gpl, export_gpl_future, export_unknown
 };
 
-#ifndef R_386_32
-# define R_386_32 1
-#endif
-#ifndef R_386_PC32
-# define R_386_PC32 2
-#endif
-
-#ifndef R_ARM_ABS32
-# define R_ARM_ABS32	2
-#endif
-#ifndef R_ARM_PC24
-# define R_ARM_PC24	1
-#endif
-
-#ifndef R_MIPS_HI16
-# define R_MIPS_HI16		5
-# define R_MIPS_LO16		6
-# define R_MIPS_26		4
-# define R_MIPS_32		2
-#endif
-
 void fatal(const char *fmt, ...)
 {
 	va_list arglist;

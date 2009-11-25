@@ -1121,31 +1121,18 @@ asmlinkage long sys_close(unsigned int fd)
 	struct fdtable *fdt;
 	int retval;
 
-#define printk(...)
-	printk("sys_close(%d)\n", fd);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	spin_lock(&files->file_lock);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	fdt = files_fdtable(files);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	if (fd >= fdt->max_fds)
 		goto out_unlock;
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	filp = fdt->fd[fd];
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	if (!filp)
 		goto out_unlock;
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	rcu_assign_pointer(fdt->fd[fd], NULL);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	FD_CLR(fd, fdt->close_on_exec);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	__put_unused_fd(files, fd);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	spin_unlock(&files->file_lock);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	retval = filp_close(filp, files);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 
 	/* can't restart close syscall because file table entry was cleared */
 	if (unlikely(retval == -ERESTARTSYS ||
@@ -1153,18 +1140,13 @@ asmlinkage long sys_close(unsigned int fd)
 		     retval == -ERESTARTNOHAND ||
 		     retval == -ERESTART_RESTARTBLOCK))
 		retval = -EINTR;
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 
 	return retval;
 
 out_unlock:
-	printk("%s:%d 0x4 = %lx %lx %lx\n", __FILE__, __LINE__, *((volatile unsigned
-					long*)0x4), files, &files->file_lock);
 	spin_unlock(&files->file_lock);
-	printk("%s:%d 0x4 = %lx\n", __FILE__, __LINE__, *((volatile unsigned long*)0x4));
 	return -EBADF;
 }
-#undef printk
 
 EXPORT_SYMBOL(sys_close);
 

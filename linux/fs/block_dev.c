@@ -950,7 +950,7 @@ static int bd_claim_by_kobject(struct block_device *bdev, void *holder,
 				struct kobject *kobj)
 {
 	int err;
-	struct bd_holder *bo, *found = NULL;
+	struct bd_holder *bo, *found;
 
 	if (!kobj)
 		return -EINVAL;

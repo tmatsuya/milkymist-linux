@@ -4,10 +4,6 @@
 # What library to link
 ldflags()
 {
-	HOST_OS=`uname -o`
-	if [ "$HOST_OS" == "Cygwin" ]; then
-		echo "-lintl"
-	fi
 	for ext in so a dylib ; do
 		for lib in ncursesw ncurses curses ; do
 			$cc -print-file-name=lib${lib}.${ext} | grep -q /

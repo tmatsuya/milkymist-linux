@@ -29,12 +29,7 @@ typedef Elf64_Addr	kernel_ulong_t;
 
 #include <ctype.h>
 
-#if defined(__CYGWIN__)
-typedef __uint32_t	__u32;
-#else
 typedef uint32_t	__u32;
-#endif
-
 typedef uint16_t	__u16;
 typedef unsigned char	__u8;
 

@@ -84,9 +84,7 @@ struct user;
  */
 #ifdef CONFIG_PREEMPT_VOLUNTARY
 extern int cond_resched(void);
-# define might_resched() do { \
-		cond_resched(); \
-	} while (0)
+# define might_resched() cond_resched()
 #else
 # define might_resched() do { } while (0)
 #endif

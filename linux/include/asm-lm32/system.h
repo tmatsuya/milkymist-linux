@@ -70,12 +70,6 @@ static inline int irqs_disabled(void)
 	return ((flags & 0x1) == 0);
 }
 
-#define local_irq_save_hw(x)		local_irq_save(x)
-#define local_irq_restore_hw(x)		local_irq_restore(x)
-#define local_irq_enable_hw()		local_irq_enable()
-#define local_irq_disable_hw()		local_irq_disable()
-#define irqs_disabled_hw()		irqs_disabled()
-
 extern asmlinkage struct task_struct* resume(struct task_struct* last, struct task_struct* next);
 
 #define switch_to(prev,next,last)				\
@@ -112,24 +106,24 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size
 
 	switch (size) {
 	case 1:
-		local_irq_save_hw(flags);
+		local_irq_save(flags);
 		ret = *(volatile unsigned char *)ptr;
 		*(volatile unsigned char *)ptr = x;
-		local_irq_restore_hw(flags);
+		local_irq_restore(flags);
 		break;
 
 	case 2:
-		local_irq_save_hw(flags);
+		local_irq_save(flags);
 		ret = *(volatile unsigned short *)ptr;
 		*(volatile unsigned short *)ptr = x;
-		local_irq_restore_hw(flags);
+		local_irq_restore(flags);
 		break;
 
 	case 4:
-		local_irq_save_hw(flags);
+		local_irq_save(flags);
 		ret = *(volatile unsigned long *)ptr;
 		*(volatile unsigned long *)ptr = x;
-		local_irq_restore_hw(flags);
+		local_irq_restore(flags);
 		break;
 
 	}

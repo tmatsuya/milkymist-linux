@@ -951,7 +951,6 @@ EXPORT_SYMBOL(console_start);
  * print any messages that were printed by the kernel before the
  * console driver was initialized.
  */
- 
 void register_console(struct console *console)
 {
 	int i;

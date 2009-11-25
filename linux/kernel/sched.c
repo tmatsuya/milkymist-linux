@@ -1436,7 +1436,7 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state, int sync)
 
 	rq = task_rq_lock(p, &flags);
 	old_state = p->state;
-	if (!(old_state & state) || (old_state & TASK_NOWAKEUP))
+	if (!(old_state & state))
 		goto out;
 
 	if (p->se.on_rq)
@@ -1856,7 +1856,7 @@ asmlinkage void schedule_tail(struct task_struct *prev)
  * context_switch - switch to the new MM and the new
  * thread's register state.
  */
-static inline int
+static inline void
 context_switch(struct rq *rq, struct task_struct *prev,
 	       struct task_struct *next)
 {
@@ -1894,19 +1894,15 @@ context_switch(struct rq *rq, struct task_struct *prev,
 #endif
 
 	/* Here we just switch the register state and the stack. */
-	//printk("switching from %lx(%s) to %lx(%s)\n", prev, prev->comm, next, next->comm);
 	switch_to(prev, next, prev);
 
 	barrier();
-
 	/*
 	 * this_rq must be evaluated again because prev may have moved
 	 * CPUs since it called schedule(), thus the 'rq' on its stack
 	 * frame will be invalid.
 	 */
 	finish_task_switch(this_rq(), prev);
-
-	return 0;
 }
 
 /*
@@ -3485,11 +3481,6 @@ need_resched:
 	rcu_qsctr_inc(cpu);
 	prev = rq->curr;
 	switch_count = &prev->nivcsw;
- 	if (unlikely(prev->state & TASK_ATOMICSWITCH)) {
- 		prev->state &= ~TASK_ATOMICSWITCH;
-		/* Pop one disable level -- one still remains. */
-		preempt_enable();
- 	}
 
 	release_kernel_lock(prev);
 need_resched_nonpreemptible:
@@ -3523,8 +3514,7 @@ need_resched_nonpreemptible:
 		rq->curr = next;
 		++*switch_count;
 
-		if (context_switch(rq, prev, next)) /* unlocks the rq unless hijacked */
-			return;
+		context_switch(rq, prev, next); /* unlocks the rq */
 	} else
 		spin_unlock_irq(&rq->lock);
 

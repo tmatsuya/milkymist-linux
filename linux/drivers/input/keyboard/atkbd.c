@@ -665,7 +665,8 @@ static int atkbd_probe(struct atkbd *atkbd)
  * these systems the BIOS also usually doesn't do it for us.
  */
 
-#if 0
+/* PS/2 write is not supported yet on Milkymist */
+#ifndef CONFIG_PLAT_MILKYMIST
 	if (atkbd_reset)
 		if (ps2_command(ps2dev, NULL, ATKBD_CMD_RESET_BAT))
 			printk(KERN_WARNING "atkbd.c: keyboard reset failed on %s\n", ps2dev->serio->phys);

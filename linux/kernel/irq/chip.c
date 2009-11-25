@@ -503,7 +503,6 @@ out_unlock:
 	spin_unlock(&desc->lock);
 }
 
-
 #ifdef CONFIG_SMP
 /**
  *	handle_percpu_IRQ - Per CPU local irq handler

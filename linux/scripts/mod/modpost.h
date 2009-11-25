@@ -7,19 +7,11 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
-#if defined(__CYGWIN__) 	/* need the GNU libelf on Cygwin */
-#include <libelf/gelf.h>
-#else
 #include <elf.h>
-#endif
 
 #include "elfconfig.h"
 
 #if KERNEL_ELFCLASS == ELFCLASS32
-
-#if !defined(Elf32_Section) && defined(_GELF_H)
-#define Elf32_Section Elf_Scn*
-#endif
 
 #define Elf_Ehdr    Elf32_Ehdr
 #define Elf_Shdr    Elf32_Shdr
@@ -34,10 +26,6 @@
 #define ELF_R_SYM   ELF32_R_SYM
 #define ELF_R_TYPE  ELF32_R_TYPE
 #else
-
-#if !defined(Elf64_Section) && defined(_GELF_H)
-#define Elf64_Section Elf_Scn*
-#endif
 
 #define Elf_Ehdr    Elf64_Ehdr
 #define Elf_Shdr    Elf64_Shdr

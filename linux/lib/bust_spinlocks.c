@@ -13,6 +13,7 @@
 #include <linux/wait.h>
 #include <linux/vt_kern.h>
 
+
 void __attribute__((weak)) bust_spinlocks(int yes)
 {
 	if (yes) {

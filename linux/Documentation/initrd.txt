@@ -91,7 +91,7 @@ Examining the contents of an existing image file is just as simple:
 
 mkdir /tmp/imagefile
 cd /tmp/imagefile
-gzip -cd /boot/imagefile.img | cpio -imt --quiet
+gzip -cd /boot/imagefile.img | cpio -imd --quiet
 
 Installation
 ------------

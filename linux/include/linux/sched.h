@@ -175,8 +175,6 @@ print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 /* in tsk->state again */
 #define TASK_NONINTERACTIVE	64
 #define TASK_DEAD		128
-#define TASK_ATOMICSWITCH	0
-#define TASK_NOWAKEUP          0
 
 #define __set_task_state(tsk, state_value)		\
 	do { (tsk)->state = (state_value); } while (0)
@@ -1336,7 +1334,6 @@ static inline void put_task_struct(struct task_struct *t)
 #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
 #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
 #define PF_FREEZER_SKIP	0x40000000	/* Freezer should not count it as freezeable */
-#define PF_EVNOTIFY	0
 
 /*
  * Only the _current_ task can read/write to tsk->flags, but other

@@ -173,10 +173,10 @@ asmlinkage long sys_munlock(unsigned long start, size_t len)
 static int do_mlockall(int flags)
 {
 	struct vm_area_struct * vma, * prev = NULL;
-	unsigned int def_flags = current->mm->def_flags & VM_PINNED;
+	unsigned int def_flags = 0;
 
 	if (flags & MCL_FUTURE)
-		def_flags |= VM_LOCKED;
+		def_flags = VM_LOCKED;
 	current->mm->def_flags = def_flags;
 	if (flags == MCL_FUTURE)
 		goto out;

@@ -93,13 +93,6 @@ config LEDS_COBALT
 	help
 	  This option enables support for the front LED on Cobalt Server
 
-config LEDS_ECP250
-	tristate "LED Support for LM32 evaluation board ECP250"
-	depends on LEDS_CLASS && LM32 && BOARD_ECP250
-	help
-	  This option enables support for the 8 LEDs on the ECP250 evaluation
-		board for the Lattice Mico32 architecture.
-
 config LEDS_GPIO
 	tristate "LED Support for GPIO connected LEDs"
 	depends on LEDS_CLASS && GENERIC_GPIO

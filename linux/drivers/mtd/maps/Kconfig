@@ -530,12 +530,6 @@ config MTD_MILKYMIST
 	help
 	  Read-only flash memory access for Milkymist VJ SoC
 
-config MTD_ECP250
-	tristate "Lattice Mico32 eval board ECP250 support"
-	depends on LM32 && MTD_CFI
-	help
-	  Flash memory access on Lattice Mico32 eval board ECP250
-
 # This needs CFI or JEDEC, depending on the cards found.
 config MTD_PCI
 	tristate "PCI MTD driver"

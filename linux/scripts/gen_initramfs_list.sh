@@ -12,8 +12,6 @@
 # error out on errors
 set -e
 
-[ -n "${FIND}" ] || FIND="find"
-
 usage() {
 cat << EOF
 Usage:
@@ -91,7 +89,7 @@ print_mtime() {
 	local my_mtime="0"
 
 	if [ -e "$1" ]; then
-		my_mtime=$(${FIND} "$1" -printf "%T@\n" | sort -r | head -n 1)
+		my_mtime=$(find "$1" -printf "%T@\n" | sort -r | head -n 1)
 	fi
 
 	echo "# Last modified: ${my_mtime}" >> ${output}
@@ -173,7 +171,7 @@ dir_filelist() {
 	${dep_list}header "$1"
 
 	srcdir=$(echo "$1" | sed -e 's://*:/:g')
-	dirlist=$(${FIND} "${srcdir}" -printf "%p %m %U %G\n")
+	dirlist=$(find "${srcdir}" -printf "%p %m %U %G\n")
 
 	# If $dirlist is only one line, then the directory is empty
 	if [  "$(echo "${dirlist}" | wc -l)" -gt 1 ]; then
