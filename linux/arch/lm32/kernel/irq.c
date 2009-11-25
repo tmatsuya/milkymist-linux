@@ -186,12 +186,6 @@ int show_interrupts(struct seq_file *p, void *v)
 	return 0;
 }
 
-/* Handle bad interrupts */
-static struct irq_desc bad_irq_desc = {
-	.handle_irq = handle_bad_irq,
-	.lock = SPIN_LOCK_UNLOCKED
-};
-
 asmlinkage void manage_signals_irq(struct pt_regs* regs);
 
 /*
@@ -202,7 +196,6 @@ asmlinkage void manage_signals_irq(struct pt_regs* regs);
 asmlinkage void asm_do_IRQ(unsigned long vec, struct pt_regs *regs)
 {
 	struct pt_regs *old_regs;
-	struct irq_desc *desc;
 	unsigned int irq;
 	
 	old_regs = set_irq_regs(regs);
