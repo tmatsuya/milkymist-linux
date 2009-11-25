@@ -286,7 +286,7 @@ static int milkymistuart_verify_port(struct uart_port *port, struct serial_struc
 }
 
 #ifdef CONFIG_SERIAL_MILKYMIST_CONSOLE
-static void lm32_console_putchar(struct uart_port *port, int ch)
+static void milkymist_console_putchar(struct uart_port *port, int ch)
 {
 	CSR_UART_RXTX = ch;
 	while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
@@ -296,14 +296,14 @@ static void lm32_console_putchar(struct uart_port *port, int ch)
 /*
  * Interrupts are disabled on entering
  */
-static void lm32_console_write(struct console *co, const char *s, u_int count)
+static void milkymist_console_write(struct console *co, const char *s, u_int count)
 {
 	struct uart_port *port = &milkymistuart_ports[co->index];
 
-	uart_console_write(port, s, count, lm32_console_putchar);
+	uart_console_write(port, s, count, milkymist_console_putchar);
 }
 
-static int __init lm32_console_setup(struct console *co, char *options)
+static int __init milkymist_console_setup(struct console *co, char *options)
 {
 	struct uart_port *port = &milkymistuart_ports[co->index];
 
@@ -323,11 +323,11 @@ static int __init lm32_console_setup(struct console *co, char *options)
 
 static struct uart_driver milkymistuart_driver;
 
-static struct console lm32_console = {
-	.name		= LM32UART_DEVICENAME,
-	.write		= lm32_console_write,
+static struct console milkymist_console = {
+	.name		= MILKYMISTUART_DEVICENAME,
+	.write		= milkymist_console_write,
 	.device		= uart_console_device,
-	.setup		= lm32_console_setup,
+	.setup		= milkymist_console_setup,
 	.flags		= CON_PRINTBUFFER,
 	.index		= -1,
 	.data		= &milkymistuart_driver,
@@ -336,48 +336,42 @@ static struct console lm32_console = {
 /*
  * Early console initialization
  */
-static int __init lm32_early_console_init(void)
+static int __init milkymist_early_console_init(void)
 {
-	if( lm32tag_num_uart > 0 ) {
-		/* first uart device = default console */
-		add_preferred_console(LM32UART_DEVICENAME, milkymistuart_default_console_device->id, NULL);
-		milkymistuart_init_port(&milkymistuart_default_console_device);
-		register_console(&lm32_console);
-		pr_info("milkymist_uart: registered real console\n");
-		return 0;
-	} else
-		return -1;
+	add_preferred_console(MILKYMISTUART_DEVICENAME, milkymistuart_default_console_device->id, NULL);
+	milkymistuart_init_port(&milkymistuart_default_console_device);
+	register_console(&milkymist_console);
+	pr_info("milkymist_uart: registered real console\n");
+	return 0;
 }
-console_initcall(lm32_early_console_init);
-/**/
+console_initcall(milkymist_early_console_init);
 
 /*
  * Late console initialization
  */
-static int __init lm32_late_console_init(void)
+static int __init milkymist_late_console_init(void)
 {
-	if( lm32tag_num_uart > 0 &&
-			!(lm32_console.flags & CON_ENABLED) ) {
-		register_console(&lm32_console);
+	if( !(milkymist_console.flags & CON_ENABLED) ) {
+		register_console(&milkymist_console);
 		pr_info("milkymist_uart: registered real console\n");
 	}
 	return 0;
 }
-core_initcall(lm32_late_console_init);
+core_initcall(milkymist_late_console_init);
 
-#define LM32_CONSOLE_DEVICE	&lm32_console
+#define MILKYMIST_CONSOLE_DEVICE	&milkymist_console
 #else
-#define LM32_CONSOLE_DEVICE	NULL
+#define MILKYMIST_CONSOLE_DEVICE	NULL
 #endif
 
 static struct uart_driver milkymistuart_driver = {
 	.owner       = THIS_MODULE,
-	.driver_name = LM32UART_DRIVERNAME,
-	.dev_name    = LM32UART_DEVICENAME,
-	.major       = LM32UART_MAJOR,
-	.minor       = LM32UART_MINOR,
-	.nr          = 0, /* will be filled from lm32tag_uart by init */
-	.cons        = LM32_CONSOLE_DEVICE
+	.driver_name = MILKYMISTUART_DRIVERNAME,
+	.dev_name    = MILKYMISTUART_DEVICENAME,
+	.major       = MILKYMISTUART_MAJOR,
+	.minor       = MILKYMISTUART_MINOR,
+	.nr          = 0, /* will be filled by init */
+	.cons        = MILKYMIST_CONSOLE_DEVICE
 };
 
 static struct uart_port* __devinit milkymistuart_init_port(struct platform_device *pdev)
@@ -385,7 +379,7 @@ static struct uart_port* __devinit milkymistuart_init_port(struct platform_devic
 	struct uart_port* port;
 	
 	port = &milkymistuart_ports[0];
-	port->type = PORT_LM32UART;
+	port->type = PORT_MILKYMISTUART;
 	port->iobase = (void __iomem*)0;
 	port->membase = (void __iomem*)0x80000000;
 	port->uartclk = cpu_frequency * 16;
@@ -402,7 +396,7 @@ static int __devinit milkymistuart_serial_probe(struct platform_device *pdev)
 	struct uart_port *port;
 	int ret;
 
-	if( pdev->id < 0 || pdev->id >= lm32tag_num_uart )
+	if( pdev->id != 0 )
 		return -1;
 
 	port = milkymistuart_init_port(pdev);
