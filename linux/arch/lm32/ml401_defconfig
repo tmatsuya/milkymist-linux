@@ -23,7 +23,6 @@ CONFIG_FLAT_NODE_MEM_MAP=y
 CONFIG_NO_IOPORT=y
 CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
 # CONFIG_APM_EMULATION is not set
-# CONFIG_IPIPE_TRACE_MCOUNTS is not set
 CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
 
 #
@@ -93,11 +92,6 @@ CONFIG_IOSCHED_NOOP=y
 # CONFIG_DEFAULT_CFQ is not set
 CONFIG_DEFAULT_NOOP=y
 CONFIG_DEFAULT_IOSCHED="noop"
-
-#
-# Real-time sub-system
-#
-# CONFIG_XENOMAI is not set
 
 #
 # Processor, Board and Features
