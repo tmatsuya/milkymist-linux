@@ -45,6 +45,12 @@
 #define IRQ_UARTRX		(3)
 #define IRQ_UARTTX		(4)
 
+#define MILKYMISTUART_DRIVERNAME "milkymistuart"
+#define MILKYMISTUART_DEVICENAME "ttyS"
+#define MILKYMISTUART_MAJOR TTY_MAJOR
+#define MILKYMISTUART_MINOR 64
+
+
 /* these two will be initialized by milkymistuart_init */
 static struct uart_port milkymistuart_ports[1];
 
@@ -75,9 +81,6 @@ static struct uart_ops milkymistuart_pops = {
 	.tx_empty	= milkymistuart_tx_empty,
 	.set_mctrl	= milkymistuart_set_mctrl,
 	.get_mctrl	= milkymistuart_get_mctrl,
-	.stop_tx	= milkymistuart_stop_tx,
-	.start_tx	= milkymistuart_start_tx,
-	.stop_rx	= milkymistuart_stop_rx,
 	.enable_ms	= milkymistuart_enable_ms,
 	.break_ctl	= milkymistuart_break_ctl,
 	.startup	= milkymistuart_startup,
@@ -145,7 +148,7 @@ static irqreturn_t milkymistuart_irq_rx(int irq, void* portarg)
 {
 	struct uart_port* port = (struct uart_port*)portarg;
 
-	milkymistuart_rx_next_char(port, uart);
+	milkymistuart_rx_next_char(port);
 	
 	return IRQ_HANDLED;
 }
@@ -225,29 +228,6 @@ static void milkymistuart_set_termios(
 	milkymistuart_set_baud_rate(port, baud);
 
 	uart_update_timeout(port, termios->c_cflag, baud);
-
-	/* read status mask */
-	port->read_status_mask = LM32_UART_LSR_OE;
-	if (termios->c_iflag & INPCK)
-		port->read_status_mask |= LM32_UART_LSR_FE | LM32_UART_LSR_PE;
-	if (termios->c_iflag & (BRKINT | PARMRK))
-		port->read_status_mask |= LM32_UART_LSR_BI;
-
-	/* ignore status mask */
-	port->ignore_status_mask = 0;
-	if (termios->c_iflag & IGNPAR)
-		port->ignore_status_mask |= LM32_UART_LSR_PE | LM32_UART_LSR_FE;
-	if (termios->c_iflag & IGNBRK) {
-		port->ignore_status_mask |= LM32_UART_LSR_BI;
-		/*
-		 * If we're ignoring parity and break indicators,
-		 * ignore overruns too (for real raw support).
-		 */
-		if (termios->c_iflag & IGNPAR)
-			port->ignore_status_mask |= LM32_UART_LSR_OE;
-	}
-	if ((termios->c_cflag & CREAD) == 0)
-		port->ignore_status_mask |= LM32_UART_RX_AVAILABLE;
 
 	/* restore irqs */
 	spin_unlock_irqrestore(&port->lock, flags);

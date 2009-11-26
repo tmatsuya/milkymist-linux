@@ -173,7 +173,7 @@ struct seq_operations cpuinfo_op = {
 	.show	= show_cpuinfo,
 };
 
-static struct resource lm32uart_resources[] = {
+static struct resource milkymistuart_resources[] = {
 	[0] = {
 		.start = 0x80000000,
 		.end = 0x8000000f,
@@ -186,11 +186,11 @@ static struct resource lm32uart_resources[] = {
 	},
 };
 
-static struct platform_device lm32uart_device = {
+static struct platform_device milkymistuart_device = {
 	.name = "milkymist_uart",
 	.id = 0,
-	.num_resources = ARRAY_SIZE(lm32uart_resources),
-	.resource = lm32uart_resources,
+	.num_resources = ARRAY_SIZE(milkymistuart_resources),
+	.resource = milkymistuart_resources,
 };
 
 #ifdef CONFIG_BOARD_XILINX_ML401
@@ -237,7 +237,7 @@ static int __init setup_devices(void) {
 	int ret = 0;
 	int err;
 
-	err = platform_device_register(&lm32uart_device);
+	err = platform_device_register(&milkymistuart_device);
 	if( err ) {
 		printk(KERN_ERR "could not register 'milkymist_uart'error:%d\n", err);
 		ret = err;
@@ -261,8 +261,8 @@ static int __init setup_devices(void) {
 
 	return ret;
 }
-/* default console - interface to lm32uart.c serial + console driver */
-struct platform_device* lm32uart_default_console_device = &lm32uart_device;
+/* default console - interface to milkymistuart.c serial + console driver */
+struct platform_device* milkymistuart_default_console_device = &milkymistuart_device;
 
 arch_initcall(setup_devices);
 

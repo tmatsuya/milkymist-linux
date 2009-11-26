@@ -146,8 +146,8 @@
 /* Broadcom SB1250, etc. SOC */
 #define PORT_SB1250_DUART	77
 
-/* LatticeMico32 UART */
-#define PORT_LM32UART	78
+/* Milkymist UART */
+#define PORT_MILKYMISTUART	78
 
 
 #ifdef __KERNEL__
