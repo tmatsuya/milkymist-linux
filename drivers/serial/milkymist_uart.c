@@ -129,10 +129,11 @@ static void milkymistuart_tx_next_char(struct uart_port* port)
 static void milkymistuart_rx_next_char(struct uart_port* port)
 {
 	struct tty_struct *tty = port->info->tty;
-	unsigned long ch;
+	unsigned char ch;
 
 	ch = CSR_UART_RXTX & 0xFF;
 	port->icount.rx++;
+CSR_UART_RXTX = 0x00;
 
 	if (uart_handle_sysrq_char(port, ch))
 		goto ignore_char;
@@ -179,26 +180,26 @@ static unsigned int milkymistuart_get_mctrl(struct uart_port *port)
 
 static void milkymistuart_start_tx(struct uart_port *port)
 {
-	lm32_irq_unmask(IRQ_UARTTX);
+//	lm32_irq_unmask(IRQ_UARTTX);
 	return 0;
 }
 
 static void milkymistuart_stop_tx(struct uart_port *port)
 {
-	lm32_irq_mask(IRQ_UARTTX);
+//	lm32_irq_mask(IRQ_UARTTX);
 	return 0;
 }
 
 
 static void milkymistuart_stop_rx(struct uart_port *port)
 {
-	lm32_irq_mask(IRQ_UARTRX);
+//	lm32_irq_mask(IRQ_UARTRX);
 	return 0;
 }
 
 static void milkymistuart_enable_ms(struct uart_port *port)
 {
-	lm32_irq_unmask(IRQ_UARTRX);
+//	lm32_irq_unmask(IRQ_UARTRX);
 }
 
 static void milkymistuart_break_ctl(struct uart_port *port, int break_state)
@@ -208,6 +209,19 @@ static void milkymistuart_break_ctl(struct uart_port *port, int break_state)
 
 static int milkymistuart_startup(struct uart_port *port)
 {
+	if( request_irq(IRQ_UARTRX, milkymistuart_irq_rx,
+				IRQF_DISABLED, "milkymist_uart RX", port) ) {
+		printk(KERN_NOTICE "Unable to attach Milkymist UART RX interrupt\n");
+		return -EBUSY;
+	}
+	if( request_irq(IRQ_UARTTX, milkymistuart_irq_tx,
+				IRQF_DISABLED, "milkymist_uart TX", port) ) {
+		printk(KERN_NOTICE "Unable to attach Milkymist UART TX interrupt\n");
+		return -EBUSY;
+	}
+
+	lm32_irq_unmask(IRQ_UARTRX);
+	lm32_irq_unmask(IRQ_UARTTX);
 
 	return 0;
 }
@@ -297,9 +311,6 @@ static int __init milkymist_console_setup(struct console *co, char *options)
 	int parity = 'n';
 	int flow = 'n';
 
-	if (port->membase == 0)		/* Port not initialized yet - delay setup */
-		return -ENODEV;
-
 	if (options)
 		uart_parse_options(options, &baud, &parity, &bits, &flow);
 
@@ -370,11 +381,11 @@ static struct uart_port* __devinit milkymistuart_init_port(struct platform_devic
 	port->irq = IRQ_UARTRX;
 	port->uartclk = cpu_frequency * 16;
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
-//	port->iotype = UPIO_PORT; // TODO perhaps this is not completely correct
-	port->iotype = UPIO_MEM32; // TODO perhaps this is not completely correct
+	port->iotype = UPIO_PORT; // TODO perhaps this is not completely correct
 	port->regshift = 0;
 	port->ops = &milkymistuart_pops;
 	port->line = 0;
+	port->fifosize = 1;
 	port->private_data = NULL;
 	return port;
 }
@@ -429,10 +440,7 @@ static struct platform_driver milkymistuart_serial_driver = {
 static int __init milkymistuart_init(void)
 {
 	int ret;
-	struct uart_port* port;
 	
-	port = &milkymistuart_ports[0];
-
 	pr_info("milkymist_uart: Milkymist UART driver\n");
 
 	/* configure from hardware setup structures */
@@ -444,20 +452,6 @@ static int __init milkymistuart_init(void)
 	ret = platform_driver_register(&milkymistuart_serial_driver);
 	if( ret < 0 )
 		uart_unregister_driver(&milkymistuart_driver);
-
-	if( request_irq(IRQ_UARTRX, milkymistuart_irq_rx,
-				IRQF_DISABLED, "milkymist_uart RX", port) ) {
-		printk(KERN_NOTICE "Unable to attach Milkymist UART RX interrupt\n");
-		return -EBUSY;
-	}
-	if( request_irq(IRQ_UARTTX, milkymistuart_irq_tx,
-				IRQF_DISABLED, "milkymist_uart TX", port) ) {
-		printk(KERN_NOTICE "Unable to attach Milkymist UART TX interrupt\n");
-		return -EBUSY;
-	}
-
-	lm32_irq_unmask(IRQ_UARTRX);
-	lm32_irq_unmask(IRQ_UARTTX);
 
 	return ret;
 }
