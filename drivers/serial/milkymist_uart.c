@@ -133,7 +133,6 @@ static void milkymistuart_rx_next_char(struct uart_port* port)
 
 	ch = CSR_UART_RXTX & 0xFF;
 	port->icount.rx++;
-CSR_UART_RXTX = 0x00;
 
 	if (uart_handle_sysrq_char(port, ch))
 		goto ignore_char;
@@ -164,7 +163,8 @@ static irqreturn_t milkymistuart_irq_tx(int irq, void* portarg)
 
 static unsigned int milkymistuart_tx_empty(struct uart_port *port)
 {
-	return TIOCSER_TEMT;
+//	return TIOCSER_TEMT;
+	return 0;
 }
 
 static void milkymistuart_set_mctrl(struct uart_port *port, unsigned int mctrl)
@@ -181,6 +181,7 @@ static unsigned int milkymistuart_get_mctrl(struct uart_port *port)
 static void milkymistuart_start_tx(struct uart_port *port)
 {
 //	lm32_irq_unmask(IRQ_UARTTX);
+	milkymistuart_tx_next_char(port);
 	return 0;
 }
 
