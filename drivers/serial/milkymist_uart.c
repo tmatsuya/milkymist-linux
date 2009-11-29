@@ -374,7 +374,7 @@ static struct uart_port* __devinit milkymistuart_init_port(struct platform_devic
 	port = &milkymistuart_ports[0];
 	port->type = PORT_MILKYMISTUART;
 	port->iobase = (void __iomem*)0x0;
-	port->membase = (void __iomem*)0x00000004;
+	port->membase = (void __iomem*)0x80000000;
 	port->irq = IRQ_UARTRX;
 	port->uartclk = cpu_frequency;
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
