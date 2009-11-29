@@ -108,6 +108,7 @@ static void milkymistuart_tx_next_char(struct uart_port* port)
 	if (port->x_char) {
 		/* send xon/xoff character */
 		CSR_UART_RXTX = port->x_char;
+		while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
 		port->x_char = 0;
 		port->icount.tx++;
 		return;
@@ -116,9 +117,10 @@ static void milkymistuart_tx_next_char(struct uart_port* port)
 	/* stop transmitting if buffer empty */
 	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
 		return;
-	
+
 	/* send next character */
 	CSR_UART_RXTX = xmit->buf[xmit->tail];
+	while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
 	xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 	port->icount.tx++;
 
@@ -163,8 +165,7 @@ static irqreturn_t milkymistuart_irq_tx(int irq, void* portarg)
 
 static unsigned int milkymistuart_tx_empty(struct uart_port *port)
 {
-//	return TIOCSER_TEMT;
-	return 0;
+	return TIOCSER_TEMT;
 }
 
 static void milkymistuart_set_mctrl(struct uart_port *port, unsigned int mctrl)
@@ -174,38 +175,33 @@ static void milkymistuart_set_mctrl(struct uart_port *port, unsigned int mctrl)
 
 static unsigned int milkymistuart_get_mctrl(struct uart_port *port)
 {
-	/* no modem control */
 	return 0;
 }
 
 static void milkymistuart_start_tx(struct uart_port *port)
 {
-//	lm32_irq_unmask(IRQ_UARTTX);
-	milkymistuart_tx_next_char(port);
+	if(!(lm32_irq_pending() & (1 << IRQ_UARTTX)))
+		milkymistuart_tx_next_char(port);
 	return 0;
 }
 
 static void milkymistuart_stop_tx(struct uart_port *port)
 {
-//	lm32_irq_mask(IRQ_UARTTX);
 	return 0;
 }
 
 
 static void milkymistuart_stop_rx(struct uart_port *port)
 {
-//	lm32_irq_mask(IRQ_UARTRX);
 	return 0;
 }
 
 static void milkymistuart_enable_ms(struct uart_port *port)
 {
-//	lm32_irq_unmask(IRQ_UARTRX);
 }
 
 static void milkymistuart_break_ctl(struct uart_port *port, int break_state)
 {
-	/* TODO */
 }
 
 static int milkymistuart_startup(struct uart_port *port)
@@ -377,16 +373,15 @@ static struct uart_port* __devinit milkymistuart_init_port(struct platform_devic
 	
 	port = &milkymistuart_ports[0];
 	port->type = PORT_MILKYMISTUART;
-	port->iobase = (void __iomem*)0x80000000;
-	port->membase = (void __iomem*)0x80000000;
+	port->iobase = (void __iomem*)0x0;
+	port->membase = (void __iomem*)0x00000004;
 	port->irq = IRQ_UARTRX;
-	port->uartclk = cpu_frequency * 16;
+	port->uartclk = cpu_frequency;
 	port->flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF; // TODO perhaps this is not completely correct
 	port->iotype = UPIO_PORT; // TODO perhaps this is not completely correct
 	port->regshift = 0;
 	port->ops = &milkymistuart_pops;
 	port->line = 0;
-	port->fifosize = 1;
 	port->private_data = NULL;
 	return port;
 }
