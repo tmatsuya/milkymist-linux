@@ -50,6 +50,7 @@
 #define MILKYMISTUART_MAJOR TTY_MAJOR
 #define MILKYMISTUART_MINOR 64
 
+static volatile int tx_cts;
 
 /* these two will be initialized by milkymistuart_init */
 static struct uart_port milkymistuart_ports[1];
@@ -107,25 +108,30 @@ static void milkymistuart_tx_next_char(struct uart_port* port)
 
 	if (port->x_char) {
 		/* send xon/xoff character */
+		tx_cts = 0;
 		CSR_UART_RXTX = port->x_char;
-		while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
 		port->x_char = 0;
 		port->icount.tx++;
 		return;
 	}
 
 	/* stop transmitting if buffer empty */
-	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
+	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
+		tx_cts = 1;
 		return;
+	}
 
 	/* send next character */
+	tx_cts = 0;
 	CSR_UART_RXTX = xmit->buf[xmit->tail];
-	while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
 	xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 	port->icount.tx++;
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
 		uart_write_wakeup(port);
+#if 1
+while(!(lm32_irq_pending() & (1 << IRQ_UARTTX)));
+#endif
 }
 
 static void milkymistuart_rx_next_char(struct uart_port* port)
@@ -158,7 +164,9 @@ static irqreturn_t milkymistuart_irq_tx(int irq, void* portarg)
 {
 	struct uart_port* port = (struct uart_port*)portarg;
 
+	lm32_irq_mask(IRQ_UARTTX);
 	milkymistuart_tx_next_char(port);
+	lm32_irq_unmask(IRQ_UARTTX);
 
 	return IRQ_HANDLED;
 }
@@ -180,8 +188,31 @@ static unsigned int milkymistuart_get_mctrl(struct uart_port *port)
 
 static void milkymistuart_start_tx(struct uart_port *port)
 {
-	if(!(lm32_irq_pending() & (1 << IRQ_UARTTX)))
-		milkymistuart_tx_next_char(port);
+	if (tx_cts) {
+		struct circ_buf *xmit = &(port->info->xmit);
+
+		if (port->x_char) {
+			/* send xon/xoff character */
+			tx_cts = 0;
+			CSR_UART_RXTX = port->x_char;
+			port->x_char = 0;
+			port->icount.tx++;
+			return 0;
+		}
+
+		/* stop transmitting if buffer empty */
+		if (uart_circ_empty(xmit) || uart_tx_stopped(port))
+			return 0;
+
+		/* send next character */
+		tx_cts = 0;
+		CSR_UART_RXTX = xmit->buf[xmit->tail];
+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+		port->icount.tx++;
+
+		if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+			uart_write_wakeup(port);
+	}
 	return 0;
 }
 
@@ -441,6 +472,7 @@ static int __init milkymistuart_init(void)
 
 	/* configure from hardware setup structures */
 	milkymistuart_driver.nr = 1;
+	tx_cts = 1;
 	ret = uart_register_driver(&milkymistuart_driver);
 	if( ret < 0 )
 		return ret;
