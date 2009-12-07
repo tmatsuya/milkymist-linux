@@ -25,7 +25,7 @@
      *  The default can be overridden if the driver is compiled as a module
      */
 
-#define VIDEOMEMSIZE	(1*1024*1024)	/* 1 MB */
+#define VIDEOMEMSIZE	(1024*800*2)	/* 1.6 MB */
 
 #define	MMPTR(x)		(*((volatile unsigned int *)(x)))
 #define	CSR_VGA_RESET		MMPTR(0x80003000)
@@ -47,35 +47,155 @@
 
 #define	CSR_VGA_BURST_COUNT	MMPTR(0x8000302C)
 
+#define	CSR_VGA_SOURCE_CLOCK	MMPTR(0x80003030)
+#define	VGA_CLOCK_VGA		(0x00)
+#define	VGA_CLOCK_SVGA		(0x01)
+#define	VGA_CLOCK_XGA		(0x02)
+
 
 static void *videomemory;
 static u_long videomemorysize = VIDEOMEMSIZE;
 module_param(videomemorysize, ulong, 0);
 
-static struct fb_var_screeninfo milkymistfb_default __initdata = {
-	.xres =		640,
-	.yres =		480,
-	.xres_virtual =	640,
-	.yres_virtual =	480,
-	.bits_per_pixel = 16,
-	.red =		{11, 5, 0 },
-      	.green =	{ 5, 6, 0 },
-      	.blue =		{ 0, 5, 0 },
-      	.activate =	FB_ACTIVATE_NOW,
-      	.height =	-1,
-      	.width =	-1,
-      	.vmode =	FB_VMODE_NONINTERLACED,
+static unsigned milkymistfb_def_mode = 1;
+
+/*
+ *    Predefine Video Modes
+ */
+struct csr_vga {
+	unsigned int csr_vga_hres;
+	unsigned int csr_vga_hsync_start;
+	unsigned int csr_vga_hsync_end;
+	unsigned int csr_vga_hscan;
+	unsigned int csr_vga_vres;
+	unsigned int csr_vga_vsync_start;
+	unsigned int csr_vga_vsync_end;
+	unsigned int csr_vga_vscan;
+	unsigned int csr_vga_source_clock;
 };
 
-static struct fb_fix_screeninfo milkymistfb_fix __initdata = {
-	.id =		"MilkymistFB",
-	.type =		FB_TYPE_PACKED_PIXELS,
-	.visual =	FB_VISUAL_TRUECOLOR,
-	.smem_len = 	(640*480*2),
-	.line_length =	640*2,
-	.accel =	FB_ACCEL_NONE,
+static const struct {
+	const char *name;
+	struct fb_var_screeninfo var;
+	struct fb_fix_screeninfo fix;
+	struct csr_vga vga;
+} milkymistfb_predefined[] = {
+	{
+		/* autodetect mode */
+		.name	= "Autodetect",
+	}, {
+		/* 640x480, 31.29 KHz 59.8 Hz, 25 MHz PixClock */
+		.name	= "640x480",
+		.var	= {
+			.xres =		640,
+			.yres =		480,
+			.xres_virtual =	640,
+			.yres_virtual =	480,
+			.bits_per_pixel = 16,
+			.red =		{11, 5, 0 },
+   		   	.green =	{ 5, 6, 0 },
+ 		     	.blue =		{ 0, 5, 0 },
+  		    	.activate =	FB_ACTIVATE_NOW,
+		      	.height =	-1,
+		      	.width =	-1,
+      			.vmode =	FB_VMODE_NONINTERLACED,
+		},
+		.fix	= {
+			.id =		"MilkymistFB",
+			.type =		FB_TYPE_PACKED_PIXELS,
+			.visual =	FB_VISUAL_TRUECOLOR,
+			.smem_len = 	(640*480*2),
+			.line_length =	640*2,
+			.accel =	FB_ACCEL_NONE,
+		},
+		.vga= {
+			.csr_vga_hres =	640,
+			.csr_vga_hsync_start = 656,
+			.csr_vga_hsync_end = 752,
+			.csr_vga_hscan = 799,
+			.csr_vga_vres = 480,
+			.csr_vga_vsync_start = 491,
+			.csr_vga_vsync_end = 493,
+			.csr_vga_vscan = 523,
+			.csr_vga_source_clock = VGA_CLOCK_VGA,
+		}
+	}, {
+		/* 800x600, 48 KHz, 72.2 Hz, 50 MHz PixClock */
+		.name	= "800x600",
+		.var	= {
+			.xres =		800,
+			.yres =		600,
+			.xres_virtual =	800,
+			.yres_virtual =	600,
+			.bits_per_pixel = 16,
+			.red =		{11, 5, 0 },
+   		   	.green =	{ 5, 6, 0 },
+ 		     	.blue =		{ 0, 5, 0 },
+  		    	.activate =	FB_ACTIVATE_NOW,
+		      	.height =	-1,
+		      	.width =	-1,
+      			.vmode =	FB_VMODE_NONINTERLACED,
+		},
+		.fix	= {
+			.id =		"MilkymistFB",
+			.type =		FB_TYPE_PACKED_PIXELS,
+			.visual =	FB_VISUAL_TRUECOLOR,
+			.smem_len = 	(800*600*2),
+			.line_length =	800*2,
+			.accel =	FB_ACCEL_NONE,
+		},
+		.vga= {
+			.csr_vga_hres =	800,
+			.csr_vga_hsync_start = 848,
+			.csr_vga_hsync_end = 976,
+			.csr_vga_hscan = 1040,
+			.csr_vga_vres = 600,
+			.csr_vga_vsync_start = 637,
+			.csr_vga_vsync_end = 643,
+			.csr_vga_vscan = 666,
+			.csr_vga_source_clock = VGA_CLOCK_SVGA,
+		}
+	}, {
+		/* 1024x768, 56.5 KHz, 70 Hz, 75 MHz PixClock */
+		.name	= "1024x768",
+		.var	= {
+			.xres =		1024,
+			.yres =		768,
+			.xres_virtual =	1024,
+			.yres_virtual =	768,
+			.bits_per_pixel = 16,
+			.red =		{11, 5, 0 },
+   		   	.green =	{ 5, 6, 0 },
+ 		     	.blue =		{ 0, 5, 0 },
+  		    	.activate =	FB_ACTIVATE_NOW,
+		      	.height =	-1,
+		      	.width =	-1,
+      			.vmode =	FB_VMODE_NONINTERLACED,
+		},
+		.fix	= {
+			.id =		"MilkymistFB",
+			.type =		FB_TYPE_PACKED_PIXELS,
+			.visual =	FB_VISUAL_TRUECOLOR,
+			.smem_len = 	(1024*768*2),
+			.line_length =	1024*2,
+			.accel =	FB_ACCEL_NONE,
+		},
+		.vga= {
+			.csr_vga_hres =	1024,
+			.csr_vga_hsync_start = 1040,
+			.csr_vga_hsync_end = 1184,
+			.csr_vga_hscan = 1328,
+			.csr_vga_vres = 768,
+			.csr_vga_vsync_start = 771,
+			.csr_vga_vsync_end = 777,
+			.csr_vga_vscan = 806,
+			.csr_vga_source_clock = VGA_CLOCK_XGA,
+		}
+	}
 };
 
+#define	NUM_TOTAL_MODES	ARRAY_SIZE(milkymistfb_predefined)
+ 
 static int milkymistfb_enable __initdata = 0;	/* disabled by default */
 module_param(milkymistfb_enable, bool, 0);
 
@@ -385,7 +505,8 @@ static int milkymistfb_mmap(struct fb_info *info,
 #ifndef MODULE
 static int __init milkymistfb_setup(char *options)
 {
-	char *this_opt;
+	char *this_opt, s[32];
+	int i;
 
 	milkymistfb_enable = 1;
 
@@ -395,6 +516,11 @@ static int __init milkymistfb_setup(char *options)
 	while ((this_opt = strsep(&options, ",")) != NULL) {
 		if (!*this_opt)
 			continue;
+		for (i=0; i<NUM_TOTAL_MODES; ++i) {
+			sprintf(s, "mode:%s", milkymistfb_predefined[i].name);
+			if (!strcmp(this_opt, s))
+				milkymistfb_def_mode = i;
+		}
 		if (!strncmp(this_opt, "disable", 7))
 			milkymistfb_enable = 0;
 	}
@@ -409,6 +535,7 @@ static int __init milkymistfb_setup(char *options)
 static int __init milkymistfb_probe(struct platform_device *dev)
 {
 	struct fb_info *info;
+	struct csr_vga *vga;
 	int retval = -ENOMEM;
 
 	/*
@@ -432,11 +559,12 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	info->screen_base = (char __iomem *)videomemory;
 	info->fbops = &milkymistfb_ops;
 
-	info->var = milkymistfb_default;
-	info->fix = milkymistfb_fix;
+	info->var = milkymistfb_predefined[milkymistfb_def_mode].var;
+	info->fix = milkymistfb_predefined[milkymistfb_def_mode].fix;
 	info->pseudo_palette = info->par;
 	info->par = NULL;
 	info->flags = FBINFO_FLAG_DEFAULT;
+	info->fix.smem_start = (char *)videomemory;
 
 	retval = fb_alloc_cmap(&info->cmap, 256, 0);
 	if (retval < 0)
@@ -451,10 +579,24 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	       "fb%d: Milkymist frame buffer at %X, size %ld k\n",
 	       info->node, videomemory, videomemorysize >> 10);
 	printk(KERN_INFO
-	       "fb%d: mode is 640x480x16\n",
-	       info->node);
+	       "fb%d: mode is %s\n",
+		info->node,
+		milkymistfb_predefined[milkymistfb_def_mode].name);
 
+	vga = &milkymistfb_predefined[milkymistfb_def_mode].vga;
+
+	CSR_VGA_RESET = 1;
 	CSR_VGA_BASEADDRESS = videomemory;
+	CSR_VGA_HRES = vga->csr_vga_hres;
+	CSR_VGA_HSYNC_START = vga->csr_vga_hsync_start;
+	CSR_VGA_HSYNC_END = vga->csr_vga_hsync_end;
+	CSR_VGA_HSCAN = vga->csr_vga_hscan;
+	CSR_VGA_VRES = vga->csr_vga_vres;
+	CSR_VGA_VSYNC_START = vga->csr_vga_vsync_start;
+	CSR_VGA_VSYNC_END = vga->csr_vga_vsync_end;
+	CSR_VGA_VSCAN = vga->csr_vga_vscan;
+	CSR_VGA_BURST_COUNT = (vga->csr_vga_hres*vga->csr_vga_vres*16)/(4*64);
+	CSR_VGA_SOURCE_CLOCK = vga->csr_vga_source_clock;
 	CSR_VGA_RESET = 0;
        
 	return 0;
