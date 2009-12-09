@@ -84,7 +84,7 @@ static const struct {
 		/* autodetect mode */
 		.name	= "Autodetect",
 	}, {
-		/* 640x480, 31.29 KHz 59.8 Hz, 25 MHz PixClock */
+		/* 640x480, 31.29, KHz 59.8 Hz, 25 MHz PixClock */
 		.name	= "640x480",
 		.var	= {
 			.xres =		640,
@@ -156,7 +156,7 @@ static const struct {
 			.csr_vga_source_clock = VGA_CLOCK_SVGA,
 		}
 	}, {
-		/* 1024x768, 56.5 KHz, 70 Hz, 75 MHz PixClock */
+		/* 1024x768, 48.363 KHz, 60 Hz, 65 MHz PixClock */
 		.name	= "1024x768",
 		.var	= {
 			.xres =		1024,
@@ -184,7 +184,7 @@ static const struct {
 			.csr_vga_hres =	1024,
 			.csr_vga_hsync_start = 1040,
 			.csr_vga_hsync_end = 1184,
-			.csr_vga_hscan = 1328,
+			.csr_vga_hscan = 1344,
 			.csr_vga_vres = 768,
 			.csr_vga_vsync_start = 771,
 			.csr_vga_vsync_end = 777,
