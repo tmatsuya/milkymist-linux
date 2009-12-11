@@ -559,6 +559,14 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	info->screen_base = (char __iomem *)videomemory;
 	info->fbops = &milkymistfb_ops;
 
+	CSR_VGA_RESET = 1;
+	vga = &milkymistfb_predefined[milkymistfb_def_mode].vga;
+	CSR_VGA_SOURCE_CLOCK = vga->csr_vga_source_clock;
+	if ( CSR_VGA_SOURCE_CLOCK != vga->csr_vga_source_clock ) {
+		milkymistfb_def_mode = 1;
+		vga = &milkymistfb_predefined[milkymistfb_def_mode].vga;
+	}
+
 	info->var = milkymistfb_predefined[milkymistfb_def_mode].var;
 	info->fix = milkymistfb_predefined[milkymistfb_def_mode].fix;
 	info->pseudo_palette = info->par;
@@ -583,9 +591,6 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 		info->node,
 		milkymistfb_predefined[milkymistfb_def_mode].name);
 
-	vga = &milkymistfb_predefined[milkymistfb_def_mode].vga;
-
-	CSR_VGA_RESET = 1;
 	CSR_VGA_BASEADDRESS = videomemory;
 	CSR_VGA_HRES = vga->csr_vga_hres;
 	CSR_VGA_HSYNC_START = vga->csr_vga_hsync_start;
@@ -596,7 +601,6 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	CSR_VGA_VSYNC_END = vga->csr_vga_vsync_end;
 	CSR_VGA_VSCAN = vga->csr_vga_vscan;
 	CSR_VGA_BURST_COUNT = (vga->csr_vga_hres*vga->csr_vga_vres*16)/(4*64);
-	CSR_VGA_SOURCE_CLOCK = vga->csr_vga_source_clock;
 	CSR_VGA_RESET = 0;
        
 	return 0;
