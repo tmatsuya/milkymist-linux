@@ -171,7 +171,7 @@ int do_poke_blanked_console;
 int console_blanked;
 
 static int vesa_blank_mode; /* 0:none 1:suspendV 2:suspendH 3:powerdown */
-static int blankinterval = 0; // 10*60*HZ;
+static int blankinterval = 10*60*HZ;
 static int vesa_off_interval;
 
 static DECLARE_WORK(console_work, console_callback);
