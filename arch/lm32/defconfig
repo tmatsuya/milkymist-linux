@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.23
-# Mon Nov 16 19:52:45 2009
+# Mon Dec 28 00:47:37 2009
 #
 CONFIG_LM32=y
 # CONFIG_MMU is not set
@@ -269,8 +269,11 @@ CONFIG_PPP_BSDCOMP=y
 # CONFIG_PPP_MPPE is not set
 # CONFIG_PPPOE is not set
 # CONFIG_PPPOL2TP is not set
-# CONFIG_SLIP is not set
+CONFIG_SLIP=y
+CONFIG_SLIP_COMPRESSED=y
 CONFIG_SLHC=y
+# CONFIG_SLIP_SMART is not set
+# CONFIG_SLIP_MODE_SLIP6 is not set
 # CONFIG_SHAPER is not set
 # CONFIG_NETCONSOLE is not set
 # CONFIG_NETPOLL is not set
@@ -350,7 +353,6 @@ CONFIG_LEGACY_PTY_COUNT=256
 # CONFIG_RTC is not set
 # CONFIG_GEN_RTC is not set
 # CONFIG_R3964 is not set
-# CONFIG_LM32_GPIO is not set
 # CONFIG_RAW_DRIVER is not set
 # CONFIG_TCG_TPM is not set
 # CONFIG_I2C is not set
@@ -516,7 +518,6 @@ CONFIG_RAMFS=y
 # CONFIG_BFS_FS is not set
 # CONFIG_EFS_FS is not set
 CONFIG_CRAMFS=y
-# CONFIG_SQUASHFS is not set
 # CONFIG_VXFS_FS is not set
 # CONFIG_HPFS_FS is not set
 # CONFIG_QNX4FS_FS is not set
@@ -638,7 +639,6 @@ CONFIG_CRC_CCITT=y
 CONFIG_CRC32=y
 # CONFIG_CRC7 is not set
 # CONFIG_LIBCRC32C is not set
-CONFIG_LZMA_DECOMPRESS=y
 CONFIG_ZLIB_INFLATE=y
 CONFIG_ZLIB_DEFLATE=y
 CONFIG_PLIST=y
