@@ -45,7 +45,6 @@ MODULE_LICENSE("GPL");
 
 static int milkbd_write(struct serio *port, unsigned char val)
 {
-
 	writel(val, PS2_DATA_REG);
 
 	return 0;
@@ -67,23 +66,23 @@ static irqreturn_t milkbd_rx(int irq, void *dev_id)
 static int milkbd_open(struct serio *port)
 {
 
-	if (request_irq(IRQ_PS2, milkbd_rx, 0, "milkbd", port) != 0) {
+	if (request_irq(IRQ_KEYBOARD, milkbd_rx, 0, "milkbd", port) != 0) {
 		printk(KERN_ERR "milkbd.c: Could not allocate keyboard receive IRQ\n");
 		return -EBUSY;
 	}
 
-	lm32_irq_unmask(IRQ_PS2);
+	lm32_irq_unmask(IRQ_KEYBOARD);
 
 	printk(KERN_INFO "milkymist_ps2: Keyboard connector at 0x%08x irq %d\n",
 		PS2_DATA_REG,
-		IRQ_PS2);
+		IRQ_KEYBOARD);
 
 	return 0;
 }
 
 static void milkbd_close(struct serio *port)
 {
-	free_irq(IRQ_PS2, port);
+	free_irq(IRQ_KEYBOARD, port);
 }
 
 /*
