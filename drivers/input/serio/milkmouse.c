@@ -45,7 +45,6 @@ MODULE_LICENSE("GPL");
 
 static int milkmouse_write(struct serio *port, unsigned char val)
 {
-
 	writel(val, PS2_DATA_REG);
 
 	return 0;
