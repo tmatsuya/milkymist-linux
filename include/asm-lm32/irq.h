@@ -46,7 +46,7 @@ extern unsigned int  lm32_core_timer_irq;
 #define	IRQ_AC97DMAW		(8)
 #define	IRQ_PFPU		(9)
 #define	IRQ_TMU			(10)
-#define	IRQ_PS2			(11)
+#define	IRQ_KEYBOARD		(11)
 #define	IRQ_MOUSE		(12)
 
 #define IRQ_SYSTMR	(IRQ_TIMER0)
