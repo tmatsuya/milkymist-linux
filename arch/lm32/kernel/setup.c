@@ -135,7 +135,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
     mmu = "none";
     fpu = "none";
 
-    clockfreq = loops_per_jiffy*HZ;
+    clockfreq = (loops_per_jiffy*HZ)*5/4;
 
     seq_printf(m, "CPU:\t\t%s\n"
 		   "MMU:\t\t%s\n"
@@ -218,8 +218,8 @@ static struct resource lm32milkbd_resources[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-		.start = IRQ_PS2,
-		.end = IRQ_PS2,
+		.start = IRQ_KEYBOARD,
+		.end = IRQ_KEYBOARD,
 		.flags = IORESOURCE_IRQ,
 	},
 };
@@ -232,6 +232,29 @@ static struct platform_device lm32milkbd_device = {
 };
 #endif
 
+#if defined(CONFIG_BOARD_XILINX_ML401) && defined(CONFIG_SERIO_MILKMOUSE)
+static struct resource lm32milkmouse_resources[] = {
+	[0] = {
+		.start = 0x80008000,
+		.end = 0x80008000,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = IRQ_MOUSE,
+		.end = IRQ_MOUSE,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device lm32milkmouse_device = {
+	.name = "milkmouse",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(lm32milkmouse_resources),
+	.resource = lm32milkmouse_resources,
+};
+#endif
+
+/* setup all devices we find in the hardware setup information */
 /* setup all devices we find in the hardware setup information */
 static int __init setup_devices(void) {
 	int ret = 0;
@@ -255,6 +278,14 @@ static int __init setup_devices(void) {
 	err = platform_device_register(&lm32milkbd_device);
 	if( err ) {
 		printk(KERN_ERR "could not register 'milkymist_ps2kbd'error:%d\n", err);
+		ret = err;
+	}
+#endif
+
+#if defined(CONFIG_BOARD_XILINX_ML401) && defined(CONFIG_SERIO_MILKMOUSE)
+	err = platform_device_register(&lm32milkmouse_device);
+	if( err ) {
+		printk(KERN_ERR "could not register 'milkymist_ps2mouse'error:%d\n", err);
 		ret = err;
 	}
 #endif

@@ -1,9 +1,9 @@
 /*
- * milkbd.c
+ * milkmouse.c
  */
 
 /*
- * Milkymist PS/2 keyboard connector driver for Linux
+ * Milkymist PS/2 mouse connector driver for Linux
  */
 
 /*
@@ -35,17 +35,17 @@
 #include <asm/irq.h>
 
 MODULE_AUTHOR("");
-MODULE_DESCRIPTION("Milkymist PS/2 keyboard connector driver");
+MODULE_DESCRIPTION("Milkymist PS/2 mouse connector driver");
 MODULE_LICENSE("GPL");
 
 /*
  * Register numbers.
  */
-#define	PS2_DATA_REG	0x80007000
-#define	PS2_STATUS_REG	0x80007004
+#define	PS2_DATA_REG	0x80008000
+#define PS2_STATUS_REG	0x80008004
 #define PS2_TX_BUSY	0x01
 
-static int milkbd_write(struct serio *port, unsigned char val)
+static int milkmouse_write(struct serio *port, unsigned char val)
 {
 	while(readl(PS2_STATUS_REG)&PS2_TX_BUSY);
 
@@ -54,7 +54,7 @@ static int milkbd_write(struct serio *port, unsigned char val)
 	return 0;
 }
 
-static irqreturn_t milkbd_rx(int irq, void *dev_id)
+static irqreturn_t milkmouse_rx(int irq, void *dev_id)
 {
 	struct serio *port = dev_id;
 	unsigned int byte;
@@ -67,33 +67,33 @@ static irqreturn_t milkbd_rx(int irq, void *dev_id)
 	return handled;
 }
 
-static int milkbd_open(struct serio *port)
+static int milkmouse_open(struct serio *port)
 {
 
-	if (request_irq(IRQ_KEYBOARD, milkbd_rx, 0, "milkbd", port) != 0) {
-		printk(KERN_ERR "milkbd.c: Could not allocate keyboard receive IRQ\n");
+	if (request_irq(IRQ_MOUSE, milkmouse_rx, 0, "milkmouse", port) != 0) {
+		printk(KERN_ERR "milkmouse.c: Could not allocate mouse receive IRQ\n");
 		return -EBUSY;
 	}
 
-	lm32_irq_unmask(IRQ_KEYBOARD);
+	lm32_irq_unmask(IRQ_MOUSE);
 
-	printk(KERN_INFO "milkymist_ps2: Keyboard connector at 0x%08x irq %d\n",
+	printk(KERN_INFO "milkymist_ps2: Mouse connector at 0x%08x irq %d\n",
 		PS2_DATA_REG,
-		IRQ_KEYBOARD);
+		IRQ_MOUSE);
 
 	return 0;
 }
 
-static void milkbd_close(struct serio *port)
+static void milkmouse_close(struct serio *port)
 {
-	free_irq(IRQ_KEYBOARD, port);
+	free_irq(IRQ_MOUSE, port);
 }
 
 /*
  * Allocate and initialize serio structure for subsequent registration
  * with serio core.
  */
-static int __devinit milkbd_probe(struct platform_device *dev)
+static int __devinit milkmouse_probe(struct platform_device *dev)
 {
 	struct serio *serio;
 
@@ -102,42 +102,42 @@ static int __devinit milkbd_probe(struct platform_device *dev)
 		return -ENOMEM;
 
 	serio->id.type		= SERIO_8042;
-	serio->write		= milkbd_write;
-	serio->open		= milkbd_open;
-	serio->close		= milkbd_close;
+	serio->write		= milkmouse_write;
+	serio->open		= milkmouse_open;
+	serio->close		= milkmouse_close;
 	serio->dev.parent	= &dev->dev;
-	strlcpy(serio->name, "Milkymist PS/2 Keyboard connector", sizeof(serio->name));
-	strlcpy(serio->phys, "milkymist/ps2keyboard", sizeof(serio->phys));
+	strlcpy(serio->name, "Milkymist PS/2 Mouse connector", sizeof(serio->name));
+	strlcpy(serio->phys, "milkymist/ps2mouse", sizeof(serio->phys));
 
 	platform_set_drvdata(dev, serio);
 	serio_register_port(serio);
 	return 0;
 }
 
-static int __devexit milkbd_remove(struct platform_device *dev)
+static int __devexit milkmouse_remove(struct platform_device *dev)
 {
 	struct serio *serio = platform_get_drvdata(dev);
 	serio_unregister_port(serio);
 	return 0;
 }
 
-static struct platform_driver milkbd_driver = {
-	.probe		= milkbd_probe,
-	.remove		= __devexit_p(milkbd_remove),
+static struct platform_driver milkmouse_driver = {
+	.probe		= milkmouse_probe,
+	.remove		= __devexit_p(milkmouse_remove),
 	.driver		= {
-	.name		= "milkbd",
+	.name		= "milkmouse",
 	},
 };
 
-static int __init milkbd_init(void)
+static int __init milkmouse_init(void)
 {
-	return platform_driver_register(&milkbd_driver);
+	return platform_driver_register(&milkmouse_driver);
 }
 
-static void __exit milkbd_exit(void)
+static void __exit milkmouse_exit(void)
 {
-	platform_driver_unregister(&milkbd_driver);
+	platform_driver_unregister(&milkmouse_driver);
 }
 
-module_init(milkbd_init);
-module_exit(milkbd_exit);
+module_init(milkmouse_init);
+module_exit(milkmouse_exit);
