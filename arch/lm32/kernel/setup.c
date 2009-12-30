@@ -135,7 +135,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
     mmu = "none";
     fpu = "none";
 
-    clockfreq = loops_per_jiffy*HZ;
+    clockfreq = (loops_per_jiffy*HZ)*5/4;
 
     seq_printf(m, "CPU:\t\t%s\n"
 		   "MMU:\t\t%s\n"
