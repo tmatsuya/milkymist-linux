@@ -42,9 +42,13 @@ MODULE_LICENSE("GPL");
  * Register numbers.
  */
 #define	PS2_DATA_REG	0x80008000
+#define PS2_STATUS_REG	0x80008004
+#define PS2_TX_BUSY	0x01
 
 static int milkmouse_write(struct serio *port, unsigned char val)
 {
+	while(readl(PS2_STATUS_REG)&PS2_TX_BUSY);
+
 	writel(val, PS2_DATA_REG);
 
 	return 0;
