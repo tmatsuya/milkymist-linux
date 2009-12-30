@@ -218,8 +218,8 @@ static struct resource lm32milkbd_resources[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-		.start = IRQ_PS2,
-		.end = IRQ_PS2,
+		.start = IRQ_KEYBOARD,
+		.end = IRQ_KEYBOARD,
 		.flags = IORESOURCE_IRQ,
 	},
 };
