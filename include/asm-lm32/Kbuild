@@ -1,1 +1,5 @@
 include include/asm-generic/Kbuild.asm
+
+header-y += io.h
+header-y += registers.h
+header-y += traps.h
