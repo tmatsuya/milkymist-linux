@@ -52,11 +52,12 @@
 #define	VGA_CLOCK_SVGA		(0x01)
 #define	VGA_CLOCK_XGA		(0x02)
 
-
+/* TODO: move these into the driver private structure (info->par) */
 static void *videomemory;
 static u_long videomemorysize = VIDEOMEMSIZE;
 module_param(videomemorysize, ulong, 0);
 
+static int already_mmaped = 0;
 static unsigned milkymistfb_def_mode = 1;
 
 /*
@@ -208,11 +209,13 @@ static int milkymistfb_pan_display(struct fb_var_screeninfo *var,
 			   struct fb_info *info);
 static int milkymistfb_mmap(struct fb_info *info,
 		    struct vm_area_struct *vma);
+static int milkymistfb_release(struct fb_info *info, int user);
 
 static struct fb_ops milkymistfb_ops = {
 	.owner		= THIS_MODULE,
-	.fb_read        = fb_sys_read,
-	.fb_write       = fb_sys_write,
+	.fb_read	= fb_sys_read,
+	.fb_write	= fb_sys_write,
+	.fb_release	= milkymistfb_release,
 	.fb_check_var	= milkymistfb_check_var,
 	.fb_set_par	= milkymistfb_set_par,
 	.fb_setcolreg	= milkymistfb_setcolreg,
@@ -492,15 +495,26 @@ static int milkymistfb_pan_display(struct fb_var_screeninfo *var,
 	return 0;
 }
 
-    /*
-     *  Most drivers don't need their own mmap function 
-     */
-
+/* Based on bf54x-lq043fb.c */
 static int milkymistfb_mmap(struct fb_info *info,
 		    struct vm_area_struct *vma)
 {
-	return -EINVAL;
+	if (already_mmaped)
+		return -1;
+	already_mmaped = 1;
+
+	vma->vm_start = (unsigned long)(videomemory);
+	vma->vm_end = vma->vm_start + info->fix.smem_len;
+	vma->vm_flags |=  VM_MAYSHARE | VM_SHARED;
+	return 0;
 }
+
+static int milkymistfb_release(struct fb_info *info, int user)
+{
+	already_mmaped = 0;
+	return 0;
+}
+
 
 #ifndef MODULE
 static int __init milkymistfb_setup(char *options)
@@ -584,7 +598,7 @@ static int __init milkymistfb_probe(struct platform_device *dev)
 	platform_set_drvdata(dev, info);
 
 	printk(KERN_INFO
-	       "fb%d: Milkymist frame buffer at %X, size %ld k\n",
+	       "fb%d: Milkymist frame buffer at %p, size %ld k\n",
 	       info->node, videomemory, videomemorysize >> 10);
 	printk(KERN_INFO
 	       "fb%d: mode is %s\n",
