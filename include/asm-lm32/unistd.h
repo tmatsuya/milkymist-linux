@@ -383,8 +383,9 @@
 #define __NR_shmctl		344
 #define __NR_shmdt		345
 #define __NR_shmget		346
+#define __NR_semtimedop		348
 
-#define __NR_syscall		347
+#define __NR_syscall		348
 #define NR_syscalls		__NR_syscall
 
 #ifdef __KERNEL__
