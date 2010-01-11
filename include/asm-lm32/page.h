@@ -45,7 +45,7 @@
 /* PAGE_SHIFT determines the page size */
 
 /* TODO: determine good page size, 12 means 2^12 bytes page size */
-#define PAGE_SHIFT	(12)
+#define PAGE_SHIFT	(13)
 #define PAGE_SIZE	(1UL << PAGE_SHIFT)
 #define PAGE_MASK	(~(PAGE_SIZE-1))
 
