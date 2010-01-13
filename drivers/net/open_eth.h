@@ -143,7 +143,7 @@ typedef struct _oeth_bd {
 #define OETH_MIISTATUS_NVALID   0x00000004 /* Data in MII Status Register is invalid */
 
 /* TODO */
-#define IRQ_ETH_0 14
+#define IRQ_ETH_0 13
 #define MACADDR0 0x00
 #define MACADDR1 0x1e
 #define MACADDR2 0xde
