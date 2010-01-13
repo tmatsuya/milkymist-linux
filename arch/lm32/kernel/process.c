@@ -89,24 +89,13 @@ void cpu_idle(void)
 	}
 }
 
+#define MMPTR(x) (*((volatile unsigned int *)(x)))
+#define CSR_SYSTEM_ID MMPTR(0x8000103c)
+
 void machine_restart(char * __unused)
 {
-	asm volatile(
-		"wcsr IE, r0\n"
-		"wcsr IM, r0\n"
-		"wcsr EBA, r0\n"
-		"rcsr r1, IP\n"
-		"wcsr IP, r1\n"
-		"nop\n"
-		"nop\n"
-#if defined(CONFIG_PLAT_MILKYMIST)
-		"mvi r1, 0x100\n"
-		"call r1\n"
-#else
-		"call r0\n"
-#endif
-		"nop\n"
-	);
+	/* Writing to CSR_SYSTEM_ID causes a system reset */
+	CSR_SYSTEM_ID = 1;
 }
 
 void machine_halt(void)
