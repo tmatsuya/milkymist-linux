@@ -512,6 +512,11 @@ oeth_rx(struct net_device *dev)
 	struct	sk_buff *small_skb;
 #endif
 
+	asm volatile( /* Invalidate Level-1 data cache */
+		"wcsr DCC, r0\n"
+		"nop\n"
+	);
+
 	D(printk("r"));
 
 	cep = (struct oeth_private *)dev->priv;
