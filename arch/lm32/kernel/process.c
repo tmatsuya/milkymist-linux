@@ -96,6 +96,7 @@ void machine_restart(char * __unused)
 {
 	/* Writing to CSR_SYSTEM_ID causes a system reset */
 	CSR_SYSTEM_ID = 1;
+	while(1);
 }
 
 void machine_halt(void)
