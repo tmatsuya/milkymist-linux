@@ -52,6 +52,7 @@
 #define R_LM32_BRANCH                    8
 #define R_LM32_GNU_VTINHERIT             9
 #define R_LM32_GNU_VTENTRY               10
+#define R_LM32_16_GOT                    11
 
 typedef unsigned long elf_greg_t;
 
@@ -73,7 +74,7 @@ typedef struct fp_regs elf_fpregset_t;
 #define ELF_CLASS	ELFCLASS32
 #define ELF_DATA	ELFDATA2MSB
 #define ELF_ARCH	EM_LM32
-#define EM_LM32 0x666 // FIXME
+#define EM_LM32		138
 
 #define ELF_PLAT_INIT(_r, load_addr)	do { } while(0)
 

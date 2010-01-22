@@ -205,10 +205,23 @@ int relocate_at(int rtype, unsigned* insn_addr, unsigned target_addr)
       return 0;
     }
     break;
+    
+  case R_LM32_16_GOT:
+    insn = *insn_addr;
+    if ((insn >> 26) == 0x0a) { /* the opcode for lw is 6b'001010 (0x0a) */
+      insn &= 0xffff0000;
+      insn |= (target_addr & 0xffff);
+      *insn_addr = insn;
+      return 0;
+    }
+    //printk("insn word 0x%08x\n", insn);
+    break;
 
   default:
-    printk("ignoring relocation type %d @ 0x%08x\n", rtype, *insn_addr);
+    printk("Ignoring relocation of unexpected type %d\n", rtype);
   }
+  
+  printk("Relocation error, type=%d addr=0x%08x\n", rtype, *insn_addr);
 
   return -1;
 }
