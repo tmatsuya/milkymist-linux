@@ -80,10 +80,10 @@ typedef struct fp_regs elf_fpregset_t;
 
 #define ELF_FDPIC_PLAT_INIT(_regs, _exec_map_addr, _interp_map_addr, _dynamic_addr)	\
 do { \
-	_regs->r6 = 0; /* 6th argument to uclibc start: rtld_fini = NULL */ \
 	_regs->r11	= _exec_map_addr;				\
 	_regs->r12	= _interp_map_addr;				\
 	_regs->r13	= _dynamic_addr;				\
+	_regs->r14	= 0; /* 6th argument to uclibc start: rtld_fini = NULL */ \
 } while(0)
 
 #define USE_ELF_CORE_DUMP
