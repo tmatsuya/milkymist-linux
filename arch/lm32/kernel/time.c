@@ -68,21 +68,13 @@ static struct irqaction lm32_core_timer_irqaction = {
 	.handler = timer_interrupt,
 };
 
-void lm32_systimer_ack(void)
-{
-	//printk("i%d\n", CSR_TIMER0_COUNTER);
-	lm32_cycles += CSR_TIMER0_COMPARE;
-	/* ack interrupt */
-	CSR_TIMER0_CONTROL = CSR_TIMER0_CONTROL;
-}
-
 /*
  * timer_interrupt() needs to call the "do_timer()"
  * routine every clocktick
  */
 static irqreturn_t timer_interrupt(int irq, void *arg)
 {
-	lm32_systimer_ack();
+	lm32_cycles += CSR_TIMER0_COMPARE;
 	write_seqlock(&xtime_lock);
 
 	do_timer(1);
