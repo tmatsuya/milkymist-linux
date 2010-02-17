@@ -157,6 +157,62 @@ static int elf_fdpic_fetch_phdrs(struct elf_fdpic_params *params,
 	return 0;
 }
 
+static 
+int relocate_at(int rtype, unsigned* insn_addr, unsigned target_addr)
+{
+  unsigned insn;
+  unsigned opcode;
+
+  switch (rtype) {
+  case R_LM32_32:
+    /* we can't really test whether the original data is an instruction
+       that could be relocated, so we simply overwrite the data that's
+       there */
+    //printk("R_LM32_32: overwriting 0x%08x with 0x%08x @ 0x%08x.\n", *insn_addr, target_addr, (unsigned)insn_addr);
+    *insn_addr = target_addr;
+    return 0; /* never fails */
+
+  case R_LM32_HI16:
+    /* the HI16 case is permitted on mvhi (orhi) instructions only! */
+    insn = *insn_addr;
+    if ((insn >> 26) == 0x1e) { /* the opcode for orhi is 6b'011110 (0x1e) */
+      insn &= 0xffff0000;
+      insn |= (target_addr >> 16);
+      *insn_addr = insn;
+      return 0;
+    }
+    //printk("insn word 0x%08x\n", insn);
+    break;
+
+  case R_LM32_LO16:
+    insn = *insn_addr;
+    if ((insn >> 26) == 0x0e) { /* the opcode for ori is 6b'001110 (0x0e) */
+      insn &= 0xffff0000;
+      insn |= (target_addr & 0xffff);
+      *insn_addr = insn;
+      return 0;
+    }
+    break;
+
+  case R_LM32_CALL:
+  case R_LM32_BRANCH:
+    /* we simply test that a PC-relative branch is used, otherwise we report an error */
+    insn = *insn_addr;
+    opcode = insn >> 26;
+    if( (opcode == 0x3e /* calli */) ||
+				(opcode == 0x38 /* bi */ ) ||
+				((opcode >= 0x11) && (opcode <= 0x15) /* the various PC-relative branches */)) {
+      return 0;
+    }
+    break;
+
+  default:
+    printk("ignoring relocation type %d @ 0x%08x\n", rtype, *insn_addr);
+  }
+
+  return -1;
+}
+
 /*****************************************************************************/
 /*
  * load an fdpic binary into various bits of memory
@@ -422,6 +478,161 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm,
 	ELF_FDPIC_PLAT_INIT(regs, exec_params.map_addr, interp_params.map_addr,
 			    dynaddr);
 #endif
+
+	/* hack start */
+	{
+		// get section headers
+		Elf32_Shdr* shdrs = NULL;
+		int num_shdrs;
+		int i;
+		int relocations_found;
+		// also get symbol table
+		Elf32_Sym* syms = NULL;
+		int num_syms;
+
+		relocations_found = 0;
+
+		if( exec_params.hdr.e_shnum == 0 ||
+				exec_params.hdr.e_shentsize == 0 ||
+				exec_params.hdr.e_shoff == 0 ) {
+			printk(KERN_ERR "Error: section headers missing for relocation!\n");
+			retval = -EINVAL;
+			goto error;
+		}
+
+		// alloc mem for section headers
+		shdrs = kmalloc(exec_params.hdr.e_shentsize * exec_params.hdr.e_shnum, GFP_KERNEL);
+		num_shdrs = exec_params.hdr.e_shnum;
+		if( !shdrs ) {
+			retval = -ENOMEM;
+			printk("%s:%d ENOMEM!\n", __FILE__, __LINE__);
+			goto error;
+		}
+
+		// retrieve from file
+		retval = kernel_read(bprm->file, exec_params.hdr.e_shoff, (char *) shdrs,
+				exec_params.hdr.e_shentsize * exec_params.hdr.e_shnum);
+		/* exec_params.hdr.e_shentsize * exec_params.hdr.e_shnum == sizeof(Elf32_Shdr)*num_shdrs */
+		if (retval < 0) {
+			printk("%s:%d error reading: %d!\n", __FILE__, __LINE__, retval);
+			kfree(shdrs);
+			goto error;
+		}
+
+#if 0
+		// print them for debugging
+		for(i = 0; i < num_shdrs; ++i)
+		{
+			printk("Elf32_Shdr %2d: type=%02lx flags=%02lx addr=%08lx off=%08lx "
+				"size=%08lx link=%02lx info=%02lx addralign=%02lx entsize=%02lx name[idx]=%d\n",
+				i, shdrs[i].sh_type, shdrs[i].sh_flags, shdrs[i].sh_addr,
+				shdrs[i].sh_offset, shdrs[i].sh_size, shdrs[i].sh_link,
+				shdrs[i].sh_info, shdrs[i].sh_addralign, shdrs[i].sh_entsize,
+				shdrs[i].sh_name);
+		}
+#endif
+
+		// find symtab
+		for(i = 0; i < num_shdrs; ++i)
+		{
+			if( shdrs[i].sh_type == SHT_SYMTAB ) {
+				// alloc mem
+				syms = kmalloc(shdrs[i].sh_size, GFP_KERNEL);
+				if( !syms ) {
+					printk("%s:%d ENOMEM!\n", __FILE__, __LINE__);
+					retval = -ENOMEM;
+					kfree(shdrs);
+					goto error;
+				}
+
+				// retrieve from file
+				retval = kernel_read(bprm->file, shdrs[i].sh_offset, (char *) syms, shdrs[i].sh_size);
+				num_syms = shdrs[i].sh_size / sizeof(Elf32_Sym);
+				if (retval < 0) {
+					printk("%s:%d error reading: %d!\n", __FILE__, __LINE__, retval);
+					kfree(syms);
+					kfree(shdrs);
+					goto error;
+				}
+				i = num_shdrs;
+				break;
+			}
+		}
+
+		// loop through all relocation sections
+		for(i = 0; i < num_shdrs; ++i)
+		{
+			Elf32_Shdr* shdr = &shdrs[i];
+
+			// skip sections which are not RELA sections
+			if( shdr->sh_type != SHT_RELA )
+				continue;
+
+			{
+				Elf32_Rela* relas;
+				int num_relas;
+				int j;
+
+				// alloc mem
+				relas = kmalloc(shdr->sh_size, GFP_KERNEL);
+				if( !relas ) {
+					printk("%s:%d ENOMEM!\n", __FILE__, __LINE__);
+					retval = -ENOMEM;
+					kfree(syms);
+					kfree(shdrs);
+					goto error;
+				}
+
+				// retrieve from file
+				retval = kernel_read(bprm->file, shdr->sh_offset, (char *) relas, shdr->sh_size);
+				num_relas = shdr->sh_size / sizeof(Elf32_Rela);
+				if (retval < 0) {
+					printk("%s:%d error reading: %d!\n", __FILE__, __LINE__, retval);
+					kfree(syms);
+					kfree(shdrs);
+					kfree(relas);
+					goto error;
+				}
+
+				// get rela section
+				//printk("section %d: applying %d relocations\n", i, num_relas);
+				for(j = 0; j < num_relas; ++j) {
+					Elf32_Rela* rela = &relas[j];
+					unsigned* orig_insn = (unsigned*)(rela->r_offset + current->mm->start_code);
+					// remember we found something
+					relocations_found++;
+
+					/*
+					printk("offset=%08lx addend=%08lx info=%08lx [sym=%06lx type=%02lx sym@%08lx]\n",
+							rela->r_offset, rela->r_addend, rela->r_info,
+							ELF32_R_SYM(rela->r_info), ELF32_R_TYPE(rela->r_info),
+							syms[ELF32_R_SYM(rela->r_info)].st_value);
+							*/
+
+					retval = relocate_at(ELF32_R_TYPE(rela->r_info), orig_insn,
+							current->mm->start_code + syms[ELF32_R_SYM(rela->r_info)].st_value + rela->r_addend);
+					if( retval != 0 ) {
+						printk("offset=%08lx addend=%08lx info=%08lx [sym=%06lx type=%02lx sym@%08lx]\n",
+								(unsigned long)rela->r_offset, (unsigned long)rela->r_addend, (unsigned long)rela->r_info,
+								(unsigned long)ELF32_R_SYM(rela->r_info), (unsigned long)ELF32_R_TYPE(rela->r_info),
+								(unsigned long)syms[ELF32_R_SYM(rela->r_info)].st_value);
+						printk("Warning: relocation returned %d!\n", retval);
+					}
+				}
+
+				kfree(relas);
+			}
+		}
+
+		kfree(syms);
+		kfree(shdrs);
+
+		if( relocations_found < 50 ) {
+			printk(KERN_ERR "Error: not enough relocations found (%d)\n", relocations_found);
+			goto error;
+		}
+	}
+	/* hack end */
 
 	/* everything is now ready... get the userspace context ready to roll */
 	entryaddr = interp_params.entry_addr ?: exec_params.entry_addr;

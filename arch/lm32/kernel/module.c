@@ -166,12 +166,10 @@ int relocate_at(int rtype, unsigned* insn_addr, unsigned target_addr)
       return 0;
     }
     break;
-    
-  default:
-    printk("Ignoring relocation of unexpected type %d\n", rtype);
-  }
 
-  printk("Relocation error, type=%d addr=0x%08x\n", rtype, *insn_addr);
+  default:
+    printk("ignoring relocation type %d @ 0x%08x\n", rtype, *insn_addr);
+  }
 
   return -1;
 }
